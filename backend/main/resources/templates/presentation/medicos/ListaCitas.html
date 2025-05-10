@@ -1,0 +1,56 @@
+<!DOCTYPE HTML>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments :: head"></head>
+<body>
+
+<header th:replace="fragments :: header"></header>
+
+<main class="content-container">
+    <h2 class="form-title">Médico - <span th:text="${nombreMedico}"></span> - Lista de Citas</h2>
+
+    <div class="search-container mb-4">
+        <form method="get" action="/medicos/medicoListaCitas" class="search-form">
+            <input type="text" name="nombrePaciente" placeholder="Nombre del paciente" class="search-input form-control">
+            <select name="estado" class="select-field form-select">
+                <option value="">Todos</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Completada">Completada</option>
+                <option value="Cancelada">Cancelada</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </form>
+    </div>
+
+    <p th:if="${#lists.isEmpty(citas)}" class="no-results">No se ha registrado ninguna cita.</p>
+
+    <div class="Doctors-grid">
+        <div th:each="cita : ${citas}" class="Doctor-card card-container">
+            <div class="Doctor-info">
+                <div class="photo-container">
+                    <img th:src="@{'/foto/' + ${cita.idMedico.id}}" class="Doctor-photo" />
+                </div>
+
+                <div class="Doctor-name">
+                    <span th:text="'Paciente: ' + ${cita.idPaciente.nombre}"></span>
+                </div>
+
+                <div class="Doctor-specialty">
+                    <p><strong>Día: </strong><span th:text="${cita.horarioIdHorario.dia}"></span></p>
+                    <p><strong>Hora: </strong><span th:text="${cita.horarioIdHorario.horaInicio} + ' - ' + ${cita.horarioIdHorario.horaFin}"></span></p>
+                    <p><strong>Estado: </strong><span th:text="${cita.estado}"></span></p>
+                </div>
+
+                <form action="/citas/CompletarCita" method="post">
+                    <input type="hidden" name="idCita" th:value="${cita.id}" />
+                    <input type="hidden" name="action" th:value="'CompletarCita'" />
+                    <button class="btn" th:disabled="${cita.estado == 'Completada'}">Completar Cita</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="fragments :: footer"></footer>
+
+</body>
+</html>

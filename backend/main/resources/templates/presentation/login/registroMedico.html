@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registro de Médico</title>
+    <th:block th:replace="fragments :: head"></th:block>
+</head>
+<body>
+<header th:replace="fragments :: header"></header>
+<main class="content-container">
+    <div class="card-container">
+        <h2 class="form-title">Registro de Médico</h2>
+
+        <form th:action="@{/registrarMedico}" method="post" enctype="multipart/form-data">
+            <!-- Campo para cargar la foto -->
+            <div class="form-group">
+                <label for="foto">Foto del Médico</label>
+                <input type="file" id="foto" name="foto" accept="image/*" required>
+                <small>Solo imágenes (JPG, PNG, GIF). Máximo 5 MB.</small>
+            </div>
+
+            <!-- Datos del Médico -->
+            <div th:object="${medico}">
+                <div class="form-group">
+                    <label>ID del Médico</label>
+                    <input type="number" th:field="*{id}" placeholder="ID del Médico" required>
+                </div>
+                <div class="form-group">
+                    <label>Nombre del Médico</label>
+                    <input type="text" th:field="*{nombre}" placeholder="Nombre del Médico" required>
+                </div>
+                <div class="form-group">
+                    <label>Especialidad</label>
+                    <input type="text" th:field="*{especialidad}" placeholder="Especialidad" required>
+                </div>
+                <div class="form-group">
+                    <label>Costo de Consulta</label>
+                    <input type="number" step="0.01" th:field="*{costoConsulta}" placeholder="Costo de Consulta" required>
+                </div>
+                <div class="form-group">
+                    <label>Ubicación</label>
+                    <input type="text" th:field="*{ubicacion}" placeholder="Ubicación" required>
+                </div>
+                <div class="form-group">
+                    <label>Presentación</label>
+                    <textarea th:field="*{presentacion}" rows="4" placeholder="Breve presentación del médico" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Frecuencia Citas</label>
+                    <input type="text" th:field="*{frecuenciaCitas}" placeholder="Frecuencia Citas" required>
+                </div>
+                <div class="form-group">
+                    <label>Días de atención:</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="diasAtencion" value="lunes"> Lunes</label>
+                        <label><input type="checkbox" name="diasAtencion" value="martes"> Martes</label>
+                        <label><input type="checkbox" name="diasAtencion" value="miércoles"> Miércoles</label>
+                        <label><input type="checkbox" name="diasAtencion" value="jueves"> Jueves</label>
+                        <label><input type="checkbox" name="diasAtencion" value="viernes"> Viernes</label>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Datos del Usuario -->
+            <div th:object="${usuario}">
+                <div class="form-group">
+                    <label>Nombre de Usuario</label>
+                    <input type="text" th:field="*{nombreUsuario}" placeholder="Nombre de Usuario" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" th:field="*{contrasena}" placeholder="Contraseña" required>
+                </div>
+                <div class="form-group">
+                    <label>Confirmar Contraseña</label>
+                    <input type="password" name="confirmContrasena" placeholder="Confirmar Contraseña" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn full-width">Registrar</button>
+        </form>
+
+        <div th:if="${errorMessage}" class="error-message">
+            <p th:text="${errorMessage}"></p>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="fragments :: footer"></footer>
+</body>
+</html>

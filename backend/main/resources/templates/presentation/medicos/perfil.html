@@ -1,0 +1,112 @@
+<!DOCTYPE HTML>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editar Perfil del Médico</title>
+  <th:block th:replace="fragments :: head"></th:block>
+</head>
+<body>
+<header th:replace="fragments :: header"></header>
+
+<main class="container content-container my-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card card-container">
+        <div class="card-header bg-primary text-white text-center">
+          <h4 class="mb-0">Editar Perfil del Médico</h4>
+        </div>
+        <div class="card-body">
+          <form th:action="@{/medicos/medico/editar}" th:object="${medico}" method="post" enctype="multipart/form-data">
+            <!-- Campos ocultos -->
+            <input type="hidden" th:field="*{autorizado}">
+            <input type="hidden" th:field="*{id}">
+            <input type="hidden" th:field="*{idUsuario}">
+
+            <!-- Datos del Médico -->
+            <div class="mb-3">
+              <label class="form-label">Foto:</label>
+              <!-- Si el médico tiene foto, muestra la imagen -->
+              <div>
+                <div class="photo-container">
+                  <img th:src="@{'/foto/' + ${medico.id}}" class="img-fluid rounded-circle rounded-img" />
+                </div>
+                <!-- Campo para cargar la foto -->
+                <div class="mb-3">
+                  <label class="form-label" for="foto">Foto del Médico</label>
+                  <input type="file" class="form-control" id="foto" name="foto" accept="image/*" required>
+                  <small class="form-text text-muted">Solo imágenes (JPG, PNG, GIF). Máximo 5 MB.</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="nombre" class="form-label">Nombre:</label>
+              <input type="text" id="nombre" th:field="*{nombre}" class="form-control" placeholder="Nombre del Médico" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="especialidad" class="form-label">Especialidad:</label>
+              <input type="text" id="especialidad" th:field="*{especialidad}" class="form-control" placeholder="Especialidad" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="costoConsulta" class="form-label">Costo de Consulta:</label>
+              <input type="number" id="costoConsulta" th:field="*{costoConsulta}" class="form-control" placeholder="Costo de Consulta" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="ubicacion" class="form-label">Ubicación:</label>
+              <input type="text" id="ubicacion" th:field="*{ubicacion}" class="form-control" placeholder="Ubicación" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="presentacion" class="form-label">Presentación:</label>
+              <textarea id="presentacion" th:field="*{presentacion}" class="form-control" rows="4" placeholder="Breve presentación del médico" required></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="frecuenciaCitas" class="form-label">Frecuencia de citas (en minutos):</label>
+              <input type="number" id="frecuenciaCitas" th:field="*{frecuenciaCitas}" class="form-control" placeholder="Frecuencia de citas" required>
+            </div>
+
+            <!-- Horario Semanal -->
+            <div class="mb-3">
+              <label class="form-label d-block">Días de atención:</label>
+              <div class="form-check">
+                <input type="checkbox" id="lunes" name="diasAtencion" value="lunes" th:checked="${#lists.contains(diasAtencionSeleccionados, 'lunes')}" class="form-check-input">
+                <label for="lunes" class="form-check-label">Lunes</label>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" id="martes" name="diasAtencion" value="martes" th:checked="${#lists.contains(diasAtencionSeleccionados, 'martes')}" class="form-check-input">
+                <label for="martes" class="form-check-label">Martes</label>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" id="miercoles" name="diasAtencion" value="miércoles" th:checked="${#lists.contains(diasAtencionSeleccionados, 'miércoles')}" class="form-check-input">
+                <label for="miercoles" class="form-check-label">Miércoles</label>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" id="jueves" name="diasAtencion" value="jueves" th:checked="${#lists.contains(diasAtencionSeleccionados, 'jueves')}" class="form-check-input">
+                <label for="jueves" class="form-check-label">Jueves</label>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" id="viernes" name="diasAtencion" value="viernes" th:checked="${#lists.contains(diasAtencionSeleccionados, 'viernes')}" class="form-check-input">
+                <label for="viernes" class="form-check-label">Viernes</label>
+              </div>
+            </div>
+
+            <!-- Botón para guardar los cambios -->
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer th:replace="fragments :: footer"></footer>
+
+</body>
+</html>

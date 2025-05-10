@@ -1,0 +1,66 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments :: head">
+  <meta charset="UTF-8">
+  <title>Doctor Profile</title>
+</head>
+<body>
+<header th:replace="fragments :: header"></header>
+
+<main class="content-container">
+  <div th:object="${medico}" class="Doctor-card">
+    <div class="photo-container">
+      <img th:src="@{'/foto/' + ${medico.id}}" class="Doctor-photo" />
+    </div>
+    <div class="Doctor-info">
+      <h3 class="Doctor-name">
+        <span th:text="'Nombre: ' + ${medico.nombre}"></span>
+      </h3>
+      <h3>
+        <span class="Doctor-cost" th:text="'Costo de consulta: ' + ${medico.costoConsulta}"></span>
+      </h3>
+      <p class="Doctor-specialty"><strong th:text="'Especialidad: ' + ${medico.especialidad}"></strong></p>
+      <p class="Doctor-location" th:text="'Ubicación: ' + ${medico.ubicacion}"></p>
+
+      <form action="/citas/paginaConfirmarCita" method="post">
+        <div class="schedule-times">
+          <div th:each="horario : ${horarios}" class="day-schedule">
+            <span th:text="${horario.dia}" class="day-name"></span>
+            <div class="time-slots">
+              <input type="hidden" name="idHorario" th:value="${horario.id}" />
+              <input type="hidden" name="idMedico" th:value="${medico.id}" />
+              <button th:text="${horario.horaInicio}"
+                      th:disabled="${horario.reservado}"
+                      th:class="${horario.reservado ? 'time-btn time-btn-disabled' : 'time-btn'}"
+                      type="submit">
+              </button>
+              <span th:text="${horario.horaInicio}"></span>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <div class="navigation-buttons">
+        <form action="/medicos/back" method="post" th:if="${page > 1}">
+          <input type="hidden" name="medicoId" th:value="${medico.id}">
+          <input type="hidden" name="page" th:value="${page}">
+          <button class="btn btn-outline-secondary">&larr; Volver</button>
+        </form>
+
+        <form action="/medicos/next" method="post" th:if="${#lists.size(horarios) > 0}">
+          <input type="hidden" name="medicoId" th:value="${medico.id}">
+          <input type="hidden" name="page" th:value="${page}">
+          <button class="btn btn-outline-primary">Siguiente &rarr;</button>
+        </form>
+      </div>
+
+      <form action="/medicos/listaMedicos" method="get" class="mt-4">
+        <button class="btn btn-outline-info">Volver</button>
+      </form>
+    </div>
+  </div>
+</main>
+
+<footer th:replace="fragments :: footer"></footer>
+</body>
+</html>

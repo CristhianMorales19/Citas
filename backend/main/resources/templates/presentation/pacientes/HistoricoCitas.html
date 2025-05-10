@@ -1,0 +1,70 @@
+<!DOCTYPE HTML>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments :: head"></head>
+<body>
+
+<header th:replace="fragments :: header"></header>
+
+<main class="content-container">
+    <h2 class="form-title">Paciente - <span th:text="${nombrePaciente}"></span> - Histórico de Citas</h2>
+
+    <!-- Formulario de filtro -->
+    <div class="search-container">
+        <form method="get" action="/pacientes/HistoricoCitas" class="search-form">
+            <div class="form-group">
+                <input type="text" name="nombreMedico" placeholder="Nombre del médico" class="full-width">
+            </div>
+            <div class="form-group">
+                <select name="estado" class="full-width">
+                    <option value="">Todos</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Completada">Completada</option>
+                    <option value="Cancelada">Cancelada</option>
+                </select>
+            </div>
+            <button type="submit" class="btn">Filtrar</button>
+        </form>
+    </div>
+
+    <!-- Mensaje si no hay citas -->
+    <p th:if="${#lists.isEmpty(citas)}" class="no-results">No se ha registrado ninguna cita.</p>
+
+    <!-- Lista de citas -->
+    <div th:each="cita : ${citas}" class="card-container">
+        <div class="card">
+            <div class="photo-container">
+                <img th:src="@{'/foto/' + ${cita.idMedico.id}}" class="rounded-img">
+            </div>
+            <div class="card-content">
+                <h3 class="Doctor-name">
+                    <span th:text="'Nombre: ' + ${cita.idMedico.nombre}"></span>
+                </h3>
+                <h3>
+                    <span class="Doctor-cost" th:text="'Costo de consulta: ' + ${cita.idMedico.costoConsulta}"></span>
+                </h3>
+                <p class="Doctor-specialty">
+                    <strong th:text="'Especialidad: ' + ${cita.idMedico.especialidad}"></strong>
+                </p>
+                <p class="Doctor-location" th:text="'Ubicación: ' + ${cita.idMedico.ubicacion}"></p>
+                <p class="Doctor-location" th:text="'Presentación: ' + ${cita.idMedico.presentacion}"></p>
+
+                <div class="divider"></div>
+
+                <p><strong>Día: </strong><span th:text="${cita.horarioIdHorario.dia}"></span></p>
+                <p><strong>Hora: </strong><span th:text="${cita.horarioIdHorario.horaInicio} + ' - ' + ${cita.horarioIdHorario.horaFin}"></span></p>
+                <p><strong>Estado: </strong><span th:text="${cita.estado}"></span></p>
+
+                <form action="/citas/CancelarCita" method="post">
+                    <input type="hidden" name="idCita" th:value="${cita.id}" />
+                    <input type="hidden" name="action" th:value="'CancelarCita'" />
+                    <button class="btn btn-deny" th:disabled="${cita.estado == 'Completada'}">Cancelar Cita</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="fragments :: footer" class="footer"></footer>
+
+</body>
+</html>
