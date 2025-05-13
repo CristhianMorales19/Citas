@@ -1,0 +1,146 @@
+package com.example.proyectocitas.controllers;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.proyectocitas.dto.DoctorDTO;
+import com.example.proyectocitas.models.Appointment;
+import com.example.proyectocitas.models.Doctor;
+import com.example.proyectocitas.models.Schedule;
+import com.example.proyectocitas.repositories.AppointmentRepository;
+import com.example.proyectocitas.repositories.DoctorRepository;
+import com.example.proyectocitas.services.DoctorService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@RestController
+@RequestMapping("/public")
+@RequiredArgsConstructor
+@Slf4j
+public class PublicController {
+
+    private final DoctorRepository doctorRepository;
+    private final AppointmentRepository appointmentRepository;
+    private final DoctorService doctorService;
+    
+    /**
+     * Endpoint público para buscar médicos por especialidad y ubicación
+     */
+    @GetMapping("/doctors")
+    public ResponseEntity<List<DoctorDTO>> searchDoctors(
+            @RequestParam(required = false) String specialty,
+            @RequestParam(required = false) String location) {
+        
+        log.info("Búsqueda pública de médicos - Especialidad: {}, Ubicación: {}", specialty, location);
+        
+        // Usar el servicio existente para buscar médicos
+        List<DoctorDTO> doctors = doctorService.searchDoctors(specialty, location);
+        
+        return ResponseEntity.ok(doctors);
+    }
+    
+    /**
+     * Endpoint público para obtener la disponibilidad de un médico para los próximos días
+     */
+    @GetMapping("/doctors/{doctorId}/availability")
+    public ResponseEntity<Map<String, Object>> getDoctorAvailability(
+            @PathVariable Long doctorId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate) {
+        
+        if (startDate == null) {
+            startDate = LocalDate.now();
+        }
+        
+        // Buscar el médico
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new IllegalArgumentException("Médico no encontrado"));
+        
+        // Solo mostrar médicos aprobados
+        if (!"APPROVED".equals(doctor.getStatus())) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        // Convertir a DTO
+        DoctorDTO doctorDTO = doctorService.convertToDTO(doctor);
+        
+        // Calcular disponibilidad para los próximos 3 días
+        List<Map<String, Object>> availableDays = new ArrayList<>();
+        
+        for (int i = 0; i < 3; i++) {
+            LocalDate date = startDate.plusDays(i);
+            String dayOfWeek = date.getDayOfWeek().toString().substring(0, 3).toLowerCase();
+            
+            // Buscar el horario del médico para este día
+            List<Schedule> schedules = doctor.getWeeklySchedule().stream()
+                    .filter(s -> s.getDay().equalsIgnoreCase(dayOfWeek))
+                    .collect(Collectors.toList());
+            
+            if (!schedules.isEmpty()) {
+                Schedule schedule = schedules.get(0);
+                
+                // Buscar citas existentes para este día
+                List<Appointment> existingAppointments = appointmentRepository
+                        .findByDoctorIdAndDate(doctor.getId(), date);
+                
+                // Crear slots de tiempo disponibles
+                Map<String, Object> dayData = new HashMap<>();
+                dayData.put("date", date.toString());
+                dayData.put("dayOfWeek", dayOfWeek);
+                
+                List<Map<String, Object>> slots = new ArrayList<>();
+                
+                // Convertir horarios de inicio y fin a LocalTime
+                LocalTime startTime = LocalTime.parse(schedule.getStartTime());
+                LocalTime endTime = LocalTime.parse(schedule.getEndTime());
+                
+                // Crear slots de duración de cita
+                LocalTime currentSlot = startTime;
+                while (currentSlot.plusMinutes(doctor.getAppointmentDuration()).isBefore(endTime) || 
+                       currentSlot.plusMinutes(doctor.getAppointmentDuration()).equals(endTime)) {
+                    
+                    // Verificar si el slot ya está ocupado
+                    boolean isAvailable = true;
+                    for (Appointment appointment : existingAppointments) {
+                        if (appointment.getTime().equals(currentSlot)) {
+                            isAvailable = false;
+                            break;
+                        }
+                    }
+                    
+                    Map<String, Object> slotData = new HashMap<>();
+                    slotData.put("time", currentSlot.toString());
+                    slotData.put("available", isAvailable);
+                    
+                    slots.add(slotData);
+                    
+                    // Avanzar al siguiente slot
+                    currentSlot = currentSlot.plusMinutes(doctor.getAppointmentDuration());
+                }
+                
+                dayData.put("slots", slots);
+                availableDays.add(dayData);
+            }
+        }
+        
+        // Construir la respuesta
+        Map<String, Object> response = new HashMap<>();
+        response.put("doctor", doctorDTO);
+        response.put("availableDays", availableDays);
+        
+        return ResponseEntity.ok(response);
+    }
+}
