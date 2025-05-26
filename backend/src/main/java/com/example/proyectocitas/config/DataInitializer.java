@@ -1,8 +1,12 @@
 package com.example.proyectocitas.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 import com.example.proyectocitas.models.Role;
 import com.example.proyectocitas.models.User;
@@ -10,12 +14,12 @@ import com.example.proyectocitas.repositories.RoleRepository;
 import com.example.proyectocitas.repositories.UserRepository;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class DataInitializer implements CommandLineRunner {
+    // Explicit logger declaration since Lombok @Slf4j might not be properly processed
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
@@ -23,12 +27,66 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        // Always ensure roles exist
         if (roleRepository.count() == 0) {
             initRoles();
         }
         
-        if (userRepository.count() == 0) {
+        // Ensure admin user exists with correct credentials
+        ensureAdminUser();
+        
+        // Initialize other users if needed
+        if (userRepository.count() <= 1) { // Only admin exists or no users
             initUsers();
+        }
+    }
+    
+    private void ensureAdminUser() {
+        String adminUsername = "admin";
+        String adminPassword = "admin123";
+        String adminName = "Administrador";
+        
+        try {
+            // First, handle any duplicate admin users
+            List<User> duplicateAdmins = userRepository.findAllByUsername(adminUsername);
+            if (!duplicateAdmins.isEmpty()) {
+                // Keep the first admin and delete the rest
+                User adminToKeep = duplicateAdmins.get(0);
+                
+                // Update the password if needed
+                if (!passwordEncoder.matches(adminPassword, adminToKeep.getPassword())) {
+                    adminToKeep.setPassword(passwordEncoder.encode(adminPassword));
+                    adminToKeep.setName(adminName);
+                    adminToKeep.setEnabled(true);
+                    userRepository.save(adminToKeep);
+                    log.info("Contraseña de administrador actualizada");
+                }
+                
+                // Delete other duplicates
+                if (duplicateAdmins.size() > 1) {
+                    List<User> adminsToDelete = duplicateAdmins.subList(1, duplicateAdmins.size());
+                    userRepository.deleteAll(adminsToDelete);
+                    log.warn("Se eliminaron {} usuarios duplicados con el nombre de usuario: {}", adminsToDelete.size(), adminUsername);
+                }
+            } else {
+                // Create new admin user if none exists
+                Role adminRole = roleRepository.findByName("admin")
+                    .orElseGet(() -> roleRepository.save(Role.builder().name("admin").build()));
+                
+                User admin = User.builder()
+                    .username(adminUsername)
+                    .password(passwordEncoder.encode(adminPassword))
+                    .name(adminName)
+                    .role(adminRole)
+                    .enabled(true)
+                    .build();
+                
+                userRepository.save(admin);
+                log.info("Usuario administrador creado");
+            }
+        } catch (Exception e) {
+            log.error("Error al inicializar el usuario administrador: {}", e.getMessage(), e);
+            throw e;
         }
     }
     

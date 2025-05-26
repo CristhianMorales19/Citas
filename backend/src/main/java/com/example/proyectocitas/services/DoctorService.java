@@ -1,5 +1,6 @@
 package com.example.proyectocitas.services;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -14,8 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.proyectocitas.dto.DoctorDTO;
 import com.example.proyectocitas.dto.ScheduleDTO;
+import com.example.proyectocitas.dto.ScheduleRequest;
 import com.example.proyectocitas.models.Appointment;
 import com.example.proyectocitas.models.Doctor;
+import com.example.proyectocitas.models.Horario;
 import com.example.proyectocitas.models.Schedule;
 import com.example.proyectocitas.models.User;
 import com.example.proyectocitas.repositories.AppointmentRepository;
@@ -31,6 +34,7 @@ public class DoctorService {
     private final DoctorRepository doctorRepository;
     private final UserRepository userRepository;
     private final AppointmentRepository appointmentRepository;
+    private final AppointmentService appointmentService;
     
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
@@ -80,26 +84,32 @@ public class DoctorService {
                         .status("PENDING")
                         .build());
         
-        doctor.setSpecialty(doctorDTO.getSpecialty());
-        doctor.setConsultationCost(doctorDTO.getConsultationCost());
+        doctor.setEspecialidad(doctorDTO.getSpecialty());
+        doctor.setCostoConsulta(doctorDTO.getConsultationCost());
         doctor.setLocation(doctorDTO.getLocation());
         doctor.setAppointmentDuration(doctorDTO.getAppointmentDuration());
-        doctor.setPresentation(doctorDTO.getPresentation());
+        doctor.setPresentacion(doctorDTO.getPresentation());
         
         // Marcar que el perfil ha sido configurado
         doctor.setProfileConfigured(true);
         
         // Update schedules
         if (doctorDTO.getWeeklySchedule() != null) {
-            doctor.getWeeklySchedule().clear();
+            if (doctor.getHorarios() == null) {
+                doctor.setHorarios(new ArrayList<>());
+            } else {
+                doctor.getHorarios().clear();
+            }
             
             for (ScheduleDTO scheduleDTO : doctorDTO.getWeeklySchedule()) {
-                Schedule schedule = new Schedule();
-                schedule.setDay(scheduleDTO.getDay());
-                schedule.setStartTime(scheduleDTO.getStartTime());
-                schedule.setEndTime(scheduleDTO.getEndTime());
-                schedule.setDoctor(doctor);
-                doctor.getWeeklySchedule().add(schedule);
+                Horario horario = new Horario();
+                horario.setDoctor(doctor);
+                horario.setDiaSemana(DayOfWeek.valueOf(scheduleDTO.getDay()));
+                horario.setHoraInicio(LocalTime.parse(scheduleDTO.getStartTime()));
+                horario.setHoraFin(LocalTime.parse(scheduleDTO.getEndTime()));
+                horario.setDuracionCita(doctor.getAppointmentDuration());
+                
+                doctor.getHorarios().add(horario);
             }
         }
         
@@ -177,16 +187,36 @@ public class DoctorService {
         
         if (scheduleList != null) {
             // Limpiar el horario actual
-            doctor.getWeeklySchedule().clear();
+            doctor.getHorarios().clear();
             
             // Añadir los nuevos horarios
             for (Map<String, Object> scheduleItem : scheduleList) {
-                Schedule schedule = new Schedule();
-                schedule.setDay((String) scheduleItem.get("day"));
-                schedule.setStartTime((String) scheduleItem.get("startTime"));
-                schedule.setEndTime((String) scheduleItem.get("endTime"));
-                schedule.setDoctor(doctor);
-                doctor.getWeeklySchedule().add(schedule);
+                Horario horario = new Horario();
+                String day = (String) scheduleItem.get("day");
+                String startTime = (String) scheduleItem.get("startTime");
+                String endTime = (String) scheduleItem.get("endTime");
+                
+                horario.setDiaSemana(DayOfWeek.valueOf(day));
+                horario.setHoraInicio(LocalTime.parse(startTime));
+                horario.setHoraFin(LocalTime.parse(endTime));
+                horario.setDoctor(doctor);
+                doctor.getHorarios().add(horario);
+                
+                // Generar citas disponibles para este horario
+                try {
+                    ScheduleRequest scheduleRequest = ScheduleRequest.builder()
+                            .diaSemana(DayOfWeek.valueOf(day))
+                            .horaInicio(LocalTime.parse(startTime))
+                            .horaFin(LocalTime.parse(endTime))
+                            .duracionCita(doctor.getAppointmentDuration())
+                            .build();
+                    
+                    // Generar citas para las próximas 4 semanas
+                    appointmentService.generateAppointmentSlots(doctor.getId(), scheduleRequest, 4);
+                } catch (Exception e) {
+                    // Registrar el error pero no fallar la operación completa
+                    System.err.println("Error generando citas para el día " + day + ": " + e.getMessage());
+                }
             }
         }
         
@@ -195,27 +225,22 @@ public class DoctorService {
     }
     
     public DoctorDTO convertToDTO(Doctor doctor) {
-        List<ScheduleDTO> schedules = doctor.getWeeklySchedule().stream()
-                .map(schedule -> ScheduleDTO.builder()
-                        .id(schedule.getId())
-                        .day(schedule.getDay())
-                        .startTime(schedule.getStartTime())
-                        .endTime(schedule.getEndTime())
-                        .build())
-                .collect(Collectors.toList());
+        if (doctor == null) {
+            return null;
+        }
         
         return DoctorDTO.builder()
                 .id(doctor.getId())
-                .name(doctor.getUser().getName())
-                .specialty(doctor.getSpecialty())
+                .userId(doctor.getUser() != null ? doctor.getUser().getId() : null)
+                .name(doctor.getUser() != null ? doctor.getUser().getName() : null)
+                .email(doctor.getUser() != null ? doctor.getUser().getEmail() : null)
+                .specialty(doctor.getEspecialidad())
+                .consultationCost(doctor.getCostoConsulta())
                 .location(doctor.getLocation())
-                .consultationCost(doctor.getConsultationCost())
                 .appointmentDuration(doctor.getAppointmentDuration())
-                .presentation(doctor.getPresentation())
-                .photoUrl(doctor.getPhotoUrl())
+                .presentation(doctor.getPresentacion())
                 .status(doctor.getStatus())
-                .profileConfigured(doctor.isProfileConfigured())
-                .weeklySchedule(schedules)
+                .profileConfigured(doctor.getProfileConfigured() != null ? doctor.getProfileConfigured() : false)
                 .build();
     }
 }

@@ -27,4 +27,36 @@ public class Role {
     public String getValue() {
         return this.name;
     }
+    
+    public String getName() {
+        return this.name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    // Custom builder method
+    public static RoleBuilder builder() {
+        return new RoleBuilder();
+    }
+    
+    // Builder class
+    public static class RoleBuilder {
+        private Role role = new Role();
+        
+        public RoleBuilder id(Long id) {
+            role.id = id;
+            return this;
+        }
+        
+        public RoleBuilder name(String name) {
+            role.name = name;
+            return this;
+        }
+        
+        public Role build() {
+            return role;
+        }
+    }
 }

@@ -14,14 +14,18 @@ import com.example.proyectocitas.models.User;
 public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     Optional<Doctor> findByUser(User user);
     
+    // Find doctor by user's username
+    @Query("SELECT d FROM Doctor d WHERE d.user.username = :username")
+    Optional<Doctor> findByUserUsername(String username);
+    
     List<Doctor> findByStatus(String status);
     
     Long countByStatus(String status);
     
     @Query("SELECT d FROM Doctor d WHERE " +
-           "(:specialty is null or d.specialty = :specialty) AND " +
+           "(:especialidad is null or d.especialidad = :especialidad) AND " +
            "(:location is null or d.location = :location)")
     List<Doctor> findBySpecialtyAndLocation(
-            @Param("specialty") String specialty, 
+            @Param("especialidad") String especialidad, 
             @Param("location") String location);
 }

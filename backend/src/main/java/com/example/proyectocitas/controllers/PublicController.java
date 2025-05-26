@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,19 +21,19 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.proyectocitas.dto.DoctorDTO;
 import com.example.proyectocitas.models.Appointment;
 import com.example.proyectocitas.models.Doctor;
+import com.example.proyectocitas.models.Horario;
 import com.example.proyectocitas.models.Schedule;
 import com.example.proyectocitas.repositories.AppointmentRepository;
 import com.example.proyectocitas.repositories.DoctorRepository;
 import com.example.proyectocitas.services.DoctorService;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/public")
 @RequiredArgsConstructor
-@Slf4j
 public class PublicController {
+    private static final Logger log = LoggerFactory.getLogger(PublicController.class);
 
     private final DoctorRepository doctorRepository;
     private final AppointmentRepository appointmentRepository;
@@ -85,16 +87,20 @@ public class PublicController {
             String dayOfWeek = date.getDayOfWeek().toString().substring(0, 3).toLowerCase();
             
             // Buscar el horario del médico para este día
-            List<Schedule> schedules = doctor.getWeeklySchedule().stream()
+            List<Horario> horarios = doctor.getWeeklySchedule().stream()
                     .filter(s -> s.getDay().equalsIgnoreCase(dayOfWeek))
                     .collect(Collectors.toList());
             
-            if (!schedules.isEmpty()) {
-                Schedule schedule = schedules.get(0);
+            if (!horarios.isEmpty()) {
+                Horario horario = horarios.get(0);
                 
                 // Buscar citas existentes para este día
                 List<Appointment> existingAppointments = appointmentRepository
                         .findByDoctorIdAndDate(doctor.getId(), date);
+                        
+                // Buscar citas disponibles para este día
+                List<Appointment> availableAppointments = appointmentRepository
+                        .findAvailableByDoctorIdAndDate(doctor.getId(), date);
                 
                 // Crear slots de tiempo disponibles
                 Map<String, Object> dayData = new HashMap<>();
@@ -104,26 +110,32 @@ public class PublicController {
                 List<Map<String, Object>> slots = new ArrayList<>();
                 
                 // Convertir horarios de inicio y fin a LocalTime
-                LocalTime startTime = LocalTime.parse(schedule.getStartTime());
-                LocalTime endTime = LocalTime.parse(schedule.getEndTime());
+                LocalTime startTime = horario.getHoraInicio();
+                LocalTime endTime = horario.getHoraFin();
                 
                 // Crear slots de duración de cita
                 LocalTime currentSlot = startTime;
                 while (currentSlot.plusMinutes(doctor.getAppointmentDuration()).isBefore(endTime) || 
                        currentSlot.plusMinutes(doctor.getAppointmentDuration()).equals(endTime)) {
                     
-                    // Verificar si el slot ya está ocupado
-                    boolean isAvailable = true;
-                    for (Appointment appointment : existingAppointments) {
-                        if (appointment.getTime().equals(currentSlot)) {
-                            isAvailable = false;
-                            break;
-                        }
-                    }
+                    // Create a final copy of currentSlot for use in lambda
+                    final LocalTime slotTime = currentSlot;
+                    
+                    // Verificar si el slot está disponible (tiene una cita con estado 'AVAILABLE')
+                    boolean isAvailable = availableAppointments.stream()
+                        .anyMatch(appt -> appt.getTime().equals(slotTime));
+                    
+                    // Verificar si el slot está ocupado por una cita programada
+                    boolean isBooked = existingAppointments.stream()
+                        .filter(appt -> appt.getStatus() != Appointment.Status.DISPONIBLE)
+                        .anyMatch(appt -> appt.getTime().equals(slotTime));
+                    
+                    // Solo mostrar el slot si está disponible y no está ocupado
+                    boolean showSlot = isAvailable && !isBooked;
                     
                     Map<String, Object> slotData = new HashMap<>();
                     slotData.put("time", currentSlot.toString());
-                    slotData.put("available", isAvailable);
+                    slotData.put("available", showSlot);
                     
                     slots.add(slotData);
                     

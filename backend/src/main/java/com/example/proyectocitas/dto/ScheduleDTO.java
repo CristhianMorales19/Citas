@@ -14,4 +14,16 @@ public class ScheduleDTO {
     private String day;
     private String startTime;
     private String endTime;
+    
+    public String getDay() {
+        return this.day;
+    }
+    
+    public String getStartTime() {
+        return this.startTime;
+    }
+    
+    public String getEndTime() {
+        return this.endTime;
+    }
 }

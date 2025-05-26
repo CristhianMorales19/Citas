@@ -30,4 +30,40 @@ public class Patient {
     private String medicalHistory;
     private String allergies;
     private String contactInformation;
+    
+    public Long getId() {
+        return this.id;
+    }
+    
+    public User getUser() {
+        return this.user;
+    }
+    
+    public String getMedicalHistory() {
+        return this.medicalHistory;
+    }
+    
+    public String getAllergies() {
+        return this.allergies;
+    }
+    
+    public String getContactInformation() {
+        return this.contactInformation;
+    }
+    
+    public void setUser(User user) {
+        this.user = user;
+    }
+    
+    public void setMedicalHistory(String medicalHistory) {
+        this.medicalHistory = medicalHistory;
+    }
+    
+    public void setAllergies(String allergies) {
+        this.allergies = allergies;
+    }
+    
+    public void setContactInformation(String contactInformation) {
+        this.contactInformation = contactInformation;
+    }
 }
