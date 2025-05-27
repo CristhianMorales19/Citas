@@ -33,6 +33,7 @@ com\example\proyectocitas\models\Patient$PatientBuilder.class
 com\example\proyectocitas\models\Doctor$DoctorBuilder.class
 com\example\proyectocitas\models\Doctor.class
 com\example\proyectocitas\services\DoctorService.class
+com\example\proyectocitas\controllers\AdminPanelController.class
 com\example\proyectocitas\config\ApplicationConfig.class
 com\example\proyectocitas\exceptions\AppointmentNotAvailableException.class
 com\example\proyectocitas\models\User$UserBuilder.class
@@ -48,6 +49,7 @@ com\example\proyectocitas\controllers\AppointmentController.class
 com\example\proyectocitas\dto\HorarioDTO.class
 com\example\proyectocitas\dto\DoctorDTO$DoctorDTOBuilder.class
 com\example\proyectocitas\services\AppointmentService.class
+com\example\proyectocitas\controllers\ErrorController.class
 com\example\proyectocitas\dto\DoctorDTO.class
 com\example\proyectocitas\config\FileStorageConfig.class
 com\example\proyectocitas\dto\AuthResponse.class

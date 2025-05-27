@@ -25,10 +25,12 @@ C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\exam
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\services\UserService.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\controllers\UserController.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\controllers\PublicController.java
+C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\controllers\AdminPanelController.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\models\Appointment.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\models\Patient.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\repositories\DoctorRepository.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\repositories\HorarioRepository.java
+C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\controllers\ErrorController.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\controllers\WebController.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\repositories\RoleRepository.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\config\ApplicationConfig.java

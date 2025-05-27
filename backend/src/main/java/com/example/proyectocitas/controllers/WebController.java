@@ -33,7 +33,7 @@ public class WebController {
     }
     
     @GetMapping("/admin-panel")
-    @PreAuthorize("hasRole('ROLE_admin')")
+    @PreAuthorize("hasRole('ADMIN')")
     public String adminPanel(Model model) {
         List<DoctorDTO> pendingDoctors = doctorService.getPendingDoctors();
         model.addAttribute("pendingDoctors", pendingDoctors);
@@ -47,14 +47,14 @@ public class WebController {
     }
     
     @GetMapping("/admin/approve-doctor/{id}")
-    @PreAuthorize("hasRole('ROLE_admin')")
+    @PreAuthorize("hasRole('ADMIN')")
     public String approveDoctor(@PathVariable Long id) {
         doctorService.approveDoctor(id);
         return "redirect:/admin-panel";
     }
     
     @GetMapping("/admin/reject-doctor/{id}")
-    @PreAuthorize("hasRole('ROLE_admin')")
+    @PreAuthorize("hasRole('ADMIN')")
     public String rejectDoctor(@PathVariable Long id) {
         doctorService.rejectDoctor(id);
         return "redirect:/admin-panel";

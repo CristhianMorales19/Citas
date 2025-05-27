@@ -63,14 +63,53 @@ public class DoctorService {
         return convertToDTO(doctor);
     }
     
+    @Transactional
     public DoctorDTO getDoctorByUsername(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
-        
-        Doctor doctor = doctorRepository.findByUser(user)
-                .orElseThrow(() -> new IllegalArgumentException("Perfil de doctor no encontrado"));
-        
-        return convertToDTO(doctor);
+        try {
+            System.out.println("Buscando usuario: " + username);
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + username));
+            
+            System.out.println("Usuario encontrado, ID: " + user.getId());
+            
+            // Try to find by user first
+            Optional<Doctor> existingDoctor = doctorRepository.findByUser(user);
+            if (existingDoctor.isPresent()) {
+                System.out.println("Doctor encontrado para el usuario: " + existingDoctor.get().getId());
+                return convertToDTO(existingDoctor.get());
+            }
+            
+            // If not found, try by username
+            existingDoctor = doctorRepository.findByUserUsername(username);
+            if (existingDoctor.isPresent()) {
+                System.out.println("Doctor encontrado por username: " + existingDoctor.get().getId());
+                return convertToDTO(existingDoctor.get());
+            }
+            
+            // If still not found, create a new doctor profile
+            System.out.println("Creando nuevo perfil de doctor para: " + username);
+            Doctor newDoctor = Doctor.builder()
+                    .user(user)
+                    .status("PENDING")
+                    .profileConfigured(false)
+                    .activo(true)
+                    .costoConsulta(0.0)
+                    .calificacion(0.0)
+                    .especialidad("General")  // Default specialty
+                    .appointmentDuration(30)  // Default appointment duration in minutes
+                    .location("")  // Empty location by default
+                    .presentation("")  // Empty presentation by default
+                    .build();
+                    
+            Doctor savedDoctor = doctorRepository.save(newDoctor);
+            System.out.println("Nuevo perfil de doctor creado con ID: " + savedDoctor.getId());
+            return convertToDTO(savedDoctor);
+            
+        } catch (Exception e) {
+            System.err.println("Error en getDoctorByUsername para usuario " + username + ": " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error al obtener el perfil del doctor: " + e.getMessage(), e);
+        }
     }
     
     @Transactional
@@ -237,6 +276,9 @@ public class DoctorService {
             // Limpiar el horario actual
             doctor.getHorarios().clear();
             
+            // Primero guardamos los horarios para que tengan un ID
+            doctor = doctorRepository.save(doctor);
+            
             // Añadir los nuevos horarios
             for (Map<String, Object> scheduleItem : scheduleList) {
                 Horario horario = new Horario();
@@ -244,39 +286,42 @@ public class DoctorService {
                 String startTime = (String) scheduleItem.get("startTime");
                 String endTime = (String) scheduleItem.get("endTime");
                 
+                // Configurar el horario
                 horario.setDiaSemana(DayOfWeek.valueOf(day));
                 horario.setHoraInicio(LocalTime.parse(startTime));
                 horario.setHoraFin(LocalTime.parse(endTime));
                 horario.setDoctor(doctor);
+                horario.setActivo(true);
+                
+                // Guardar el horario primero
                 doctor.getHorarios().add(horario);
+                doctor = doctorRepository.save(doctor);
+                
+                // Obtener el horario recién guardado para asegurarnos de que tiene un ID
+                Horario horarioGuardado = doctor.getHorarios().stream()
+                    .filter(h -> h.getDiaSemana() == DayOfWeek.valueOf(day) && 
+                                h.getHoraInicio().equals(LocalTime.parse(startTime)) && 
+                                h.getHoraFin().equals(LocalTime.parse(endTime)))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Error al guardar el horario"));
                 
                 // Generar citas disponibles para este horario
                 try {
-// Crear una lista con el día de la semana actual
-                    List<DayOfWeek> diasDisponibles = new ArrayList<>();
-                    diasDisponibles.add(DayOfWeek.valueOf(day));
-                    
-                    ScheduleRequest scheduleRequest = ScheduleRequest.builder()
-                            .diaSemana(DayOfWeek.valueOf(day))
-                            .horaInicio(LocalTime.parse(startTime))
-                            .horaFin(LocalTime.parse(endTime))
-                            .duracionCita(doctor.getAppointmentDuration())
-                            .diasDisponibles(diasDisponibles)
-                            .fechaInicio(LocalDate.now())
-                            .fechaFin(LocalDate.now().plusWeeks(4))
-                            .build();
-                    
-                    // Generar citas para las próximas 4 semanas
-                    appointmentService.generateAppointmentSlots(doctor.getId(), scheduleRequest, 4);
+                    // Generar citas para este horario específico
+                    int citasGeneradas = appointmentService.generateAppointmentsForDoctor(doctor.getId());
+                    System.out.println("Se generaron " + citasGeneradas + " citas para el doctor " + doctor.getUser().getUsername());
                 } catch (Exception e) {
                     // Registrar el error pero no fallar la operación completa
                     System.err.println("Error generando citas para el día " + day + ": " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
+            
+            Doctor savedDoctor = doctorRepository.save(doctor);
+            return convertToDTO(savedDoctor);
         }
         
-        Doctor savedDoctor = doctorRepository.save(doctor);
-        return convertToDTO(savedDoctor);
+        return convertToDTO(doctor);
     }
     
     public DoctorDTO convertToDTO(Doctor doctor) {

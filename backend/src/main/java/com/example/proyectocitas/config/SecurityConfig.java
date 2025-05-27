@@ -25,7 +25,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -33,27 +33,44 @@ public class SecurityConfig {
     private final AuthenticationProvider authenticationProvider;
 
     @Bean
-    @Order(1)
-    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/auth/**", "/api/**", "/diagnostic/**", "/public/**")
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers(
-                    "/api/users/register-alternative/**",
-                    "/auth/**"
-                )
-            )
+            .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/api/users/register-alternative",
-                    "/api/users/register-alternative/**",
-                    "/auth/**",
-                    "/error",
-                    "/diagnostic/**",
-                    "/public/**"
-                ).permitAll()
-                .anyRequest().authenticated()
+                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/admin-panel").hasRole("ADMIN")
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/doctors/**").permitAll()
+                .requestMatchers("/api/appointments/**").authenticated()
+                .requestMatchers("/api/users/me").authenticated()
+                .anyRequest().permitAll()
+            )
+            .formLogin(form -> form
+                .loginPage("/login")
+                .loginProcessingUrl("/auth/login")
+                .successHandler((request, response, authentication) -> {
+                    response.setStatus(200);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"success\":true}");
+                })
+                .failureHandler((request, response, exception) -> {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"success\":false,\"message\":\"Credenciales inválidas\"}");
+                })
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .logoutUrl("/auth/logout")
+                .logoutSuccessHandler((request, response, authentication) -> {
+                    response.setStatus(200);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"success\":true}");
+                })
+                .deleteCookies("JSESSIONID")
+                .invalidateHttpSession(true)
+                .permitAll()
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -61,75 +78,32 @@ public class SecurityConfig {
             .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // Para debugging
-        System.out.println("Configuración de seguridad API actualizada: rutas públicas explicitamente permitidas");
-
-        return http.build();
-    }
-    
-    @Bean
-    @Order(2)
-    public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .securityMatcher("/", "/login", "/admin-panel", "/admin/**", "/css/**", "/js/**", "/images/**")
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/css/**", "/js/**", "/images/**").permitAll()
-                .requestMatchers("/admin-panel", "/admin/**").hasAnyRole("ADMIN", "MEDICO")
-                .anyRequest().authenticated()
-            )
-            .formLogin(form -> form
-                .loginPage("/login")
-                .defaultSuccessUrl("/admin-panel")
-                .permitAll()
-            )
-            .logout(logout -> logout
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-                .logoutSuccessUrl("/login?logout")
-                .permitAll()
-            );
-
-        System.out.println("Configuración de seguridad WEB actualizada: formulario de login configurado");
-            
         return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        System.out.println("Configurando CORS...");
-        
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Permitir solicitudes desde el frontend
-        configuration.setAllowedOriginPatterns(List.of("*"));
-        
-        // Métodos HTTP permitidos
-        configuration.setAllowedMethods(List.of(
-            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
-        ));
-        
-        // Cabeceras permitidas
-        configuration.setAllowedHeaders(List.of(
-            "*"
-        ));
-        
-        // Cabeceras expuestas
-        configuration.setExposedHeaders(List.of(
-            "Authorization", "Content-Type", "Accept", "X-Requested-With"
-        ));
-        
-        // Permitir credenciales
+        // Allow requests from frontend
+        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
-        
-        // Tiempo de caché para la configuración CORS (en segundos)
         configuration.setMaxAge(3600L);
         
-        // Registrar la configuración para todas las rutas
+        // Configure exposed headers
+        configuration.setExposedHeaders(List.of(
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "X-Requested-With"
+        ));
+        
+        // Register CORS configuration for all paths
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         
-        System.out.println("Configuración CORS aplicada para todos los orígenes");
         return source;
     }
-
-
 }

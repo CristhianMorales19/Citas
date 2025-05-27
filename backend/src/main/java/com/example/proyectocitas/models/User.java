@@ -52,7 +52,20 @@ public class User implements UserDetails {
     
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.getValue()));
+        if (this.role == null) {
+            return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        }
+        String roleName = this.role.getName();
+        if (roleName == null || roleName.trim().isEmpty()) {
+            return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        }
+        // Asegurarse de que el nombre del rol esté en mayúsculas y tenga el prefijo ROLE_
+        if (!roleName.startsWith("ROLE_")) {
+            roleName = "ROLE_" + roleName.toUpperCase();
+        } else {
+            roleName = roleName.toUpperCase();
+        }
+        return List.of(new SimpleGrantedAuthority(roleName));
     }
     
     @Override

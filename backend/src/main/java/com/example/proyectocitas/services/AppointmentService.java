@@ -1,5 +1,8 @@
 package com.example.proyectocitas.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,6 +40,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @RequiredArgsConstructor
 public class AppointmentService {
+    private static final Logger log = LoggerFactory.getLogger(AppointmentService.class);
 
     private final AppointmentRepository appointmentRepository;
     private final DoctorRepository doctorRepository;
@@ -365,7 +369,7 @@ public class AppointmentService {
         // Convertir a DTO y ordenar por fecha y hora
         return citasDisponibles.stream()
                 .map(this::convertToDTO)
-                .sorted(Comparator.comparing(AppointmentDTO::getFecha)
+                .sorted(Comparator.comparing(AppointmentDTO::getDate)
                                 .thenComparing(AppointmentDTO::getHoraInicio))
                 .collect(Collectors.toList());
     }
@@ -617,6 +621,47 @@ public class AppointmentService {
         }
         
         return appointmentsCreated;
+    }
+    
+    /**
+     * Genera citas para un médico específico basado en sus horarios
+     * @param doctorId ID del médico
+     * @return Número de citas generadas
+     */
+    @Transactional
+    public int generateAppointmentsForDoctor(Long doctorId) {
+        log.info("Generando citas para el médico con ID: {}", doctorId);
+        
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Médico no encontrado con ID: " + doctorId));
+        
+        // Obtener horarios activos del médico
+        List<Horario> horarios = horarioRepository.findByDoctorIdAndActivoTrue(doctorId);
+        
+        if (horarios.isEmpty()) {
+            log.warn("No se encontraron horarios activos para el médico con ID: {}", doctorId);
+            return 0;
+        }
+        
+        int totalCitasGeneradas = 0;
+        LocalDate startDate = LocalDate.now();
+        LocalDate endDate = startDate.plusWeeks(4); // Generar citas para las próximas 4 semanas
+        
+        for (Horario horario : horarios) {
+            LocalDate currentDate = startDate;
+            
+            // Generar citas para cada día en el rango
+            while (!currentDate.isAfter(endDate)) {
+                // Verificar si el día de la semana coincide con el horario
+                if (currentDate.getDayOfWeek() == horario.getDiaSemana()) {
+                    totalCitasGeneradas += generateDailyAppointments(doctor, horario, currentDate);
+                }
+                currentDate = currentDate.plusDays(1);
+            }
+        }
+        
+        log.info("Total de citas generadas para el médico {}: {}", doctor.getUser().getUsername(), totalCitasGeneradas);
+        return totalCitasGeneradas;
     }
     
     /**

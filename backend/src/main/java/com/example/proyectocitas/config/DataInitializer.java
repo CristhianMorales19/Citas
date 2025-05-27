@@ -70,8 +70,8 @@ public class DataInitializer implements CommandLineRunner {
                 }
             } else {
                 // Create new admin user if none exists
-                Role adminRole = roleRepository.findByName("admin")
-                    .orElseGet(() -> roleRepository.save(Role.builder().name("admin").build()));
+                Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                    .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_ADMIN").build()));
                 
                 User admin = User.builder()
                     .username(adminUsername)
@@ -93,9 +93,9 @@ public class DataInitializer implements CommandLineRunner {
     private void initRoles() {
         log.info("Inicializando roles...");
         
-        Role adminRole = Role.builder().name("admin").build();
-        Role doctorRole = Role.builder().name("medico").build();
-        Role patientRole = Role.builder().name("paciente").build();
+        Role adminRole = Role.builder().name("ROLE_ADMIN").build();
+        Role doctorRole = Role.builder().name("ROLE_MEDICO").build();
+        Role patientRole = Role.builder().name("ROLE_PACIENTE").build();
         
         roleRepository.save(adminRole);
         roleRepository.save(doctorRole);
