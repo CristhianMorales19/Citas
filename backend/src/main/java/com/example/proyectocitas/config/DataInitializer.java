@@ -1,22 +1,21 @@
 package com.example.proyectocitas.config;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 import com.example.proyectocitas.models.Role;
 import com.example.proyectocitas.models.User;
 import com.example.proyectocitas.repositories.RoleRepository;
 import com.example.proyectocitas.repositories.UserRepository;
 
-import lombok.RequiredArgsConstructor;
-
 @Component
-@RequiredArgsConstructor
+@Order(2) // Execute after DatabaseCleanupService
 public class DataInitializer implements CommandLineRunner {
     // Explicit logger declaration since Lombok @Slf4j might not be properly processed
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
@@ -24,6 +23,12 @@ public class DataInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    public DataInitializer(RoleRepository roleRepository, UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.roleRepository = roleRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     public void run(String... args) throws Exception {

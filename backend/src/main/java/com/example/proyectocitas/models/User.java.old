@@ -7,7 +7,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -18,6 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.CascadeType;
 
 @Entity
 @Table(name = "users")
@@ -40,13 +40,7 @@ public class User implements UserDetails {
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
-    
-    // Constructor por defecto
-    public User() {
-        this.enabled = true;
-    }
-    
-    @Override
+      @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.role == null) {
             return List.of(new SimpleGrantedAuthority("ROLE_USER"));
@@ -85,13 +79,9 @@ public class User implements UserDetails {
         return this.username;
     }
     
-    // Explicit getters/setters
+    // Explicit getters/setters for fields that might have issues with Lombok
     public Long getId() {
         return id;
-    }
-    
-    public void setId(Long id) {
-        this.id = id;
     }
     
     public String getPassword() {
@@ -134,14 +124,6 @@ public class User implements UserDetails {
         this.username = username;
     }
     
-    public Doctor getDoctor() {
-        return doctor;
-    }
-    
-    public void setDoctor(Doctor doctor) {
-        this.doctor = doctor;
-    }
-    
     // Custom builder method
     public static UserBuilder builder() {
         return new UserBuilder();
@@ -149,44 +131,40 @@ public class User implements UserDetails {
     
     // Builder class
     public static class UserBuilder {
-        private final User user;
-        
-        public UserBuilder() {
-            this.user = new User();
-        }
+        private User user = new User();
         
         public UserBuilder id(Long id) {
-            user.setId(id);
+            user.id = id;
             return this;
         }
         
         public UserBuilder username(String username) {
-            user.setUsername(username);
+            user.username = username;
             return this;
         }
         
         public UserBuilder password(String password) {
-            user.setPassword(password);
+            user.password = password;
             return this;
         }
         
         public UserBuilder name(String name) {
-            user.setName(name);
+            user.name = name;
             return this;
         }
         
         public UserBuilder email(String email) {
-            user.setEmail(email);
+            user.email = email;
             return this;
         }
         
         public UserBuilder enabled(boolean enabled) {
-            user.setEnabled(enabled);
+            user.enabled = enabled;
             return this;
         }
         
         public UserBuilder role(Role role) {
-            user.setRole(role);
+            user.role = role;
             return this;
         }
         

@@ -9,9 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Configuration
-public class FileStorageConfig implements WebMvcConfigurer {
-
-    @Value("${file.upload-dir:./uploads}")
+public class FileStorageConfig implements WebMvcConfigurer {    @Value("${app.upload.dir:./uploads}")
     private String uploadDir;
 
     @Override

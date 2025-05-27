@@ -1,13 +1,9 @@
 package com.example.proyectocitas.controllers;
 
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class HomeController {
-
-    @GetMapping("/")
-    public String home() {
-        return "redirect:/login";
-    }
+    // This controller can be used for other home-related endpoints if needed
+    // The root "/" mapping is handled by WebController
 }

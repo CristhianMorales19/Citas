@@ -1,6 +1,7 @@
 package com.example.proyectocitas.services;
 
 import com.example.proyectocitas.dto.RegisterRequest;
+import com.example.proyectocitas.exceptions.UserAlreadyExistsException;
 import com.example.proyectocitas.models.Doctor;
 import com.example.proyectocitas.models.Role;
 import com.example.proyectocitas.models.User;
@@ -8,8 +9,8 @@ import com.example.proyectocitas.repositories.DoctorRepository;
 import com.example.proyectocitas.repositories.RoleRepository;
 import com.example.proyectocitas.repositories.UserRepository;
 import com.example.proyectocitas.security.JwtService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -18,9 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class UserRegistrationService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserRegistrationService.class);
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -28,27 +29,35 @@ public class UserRegistrationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
+    public UserRegistrationService(UserRepository userRepository, 
+                                 RoleRepository roleRepository,
+                                 DoctorRepository doctorRepository, 
+                                 PasswordEncoder passwordEncoder,
+                                 JwtService jwtService) {
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.doctorRepository = doctorRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
+    }
+
     @Transactional
     public Map<String, Object> registerUser(RegisterRequest request) {
-        // Validar si el usuario ya existe
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("El nombre de usuario ya está en uso");
+            throw new UserAlreadyExistsException("El nombre de usuario ya está en uso");
         }
 
-        // 1. Crear y guardar el usuario en una transacción separada
         User savedUser = createUserTransactionally(request);
         
-        // 2. Si es médico, crear el perfil en una transacción separada
         if ("medico".equalsIgnoreCase(request.getRole())) {
             try {
                 createDoctorProfileTransactionally(savedUser);
             } catch (Exception e) {
-                log.error("Error creando perfil de médico: {}", e.getMessage(), e);
-                // Continuamos con el registro aunque falle la creación del perfil
+                log.error("Error al crear perfil de médico para usuario {}: {}", 
+                    savedUser.getUsername(), e.getMessage(), e);
             }
         }
 
-        // 3. Generar token JWT
         String token = jwtService.generateToken(savedUser);
         
         return Map.of(
@@ -87,22 +96,23 @@ public class UserRegistrationService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     protected void createDoctorProfileTransactionally(User user) {
         if (doctorRepository.findByUser(user).isEmpty()) {
-            Doctor doctor = new Doctor();
-            doctor.setUser(user);
-            doctor.setEspecialidad("General");
-            doctor.setCostoConsulta(0.0);
-            doctor.setAppointmentDuration(30);
-            doctor.setActivo(true);
-            doctor.setStatus("PENDING");
-            doctor.setProfileConfigured(false);
-            doctor.setCalificacion(0.0);
-            doctor.setDescripcion("");
-            doctor.setLocation("");
-            doctor.setPresentation("");
-            doctor.setPhotoUrl("");
+            Doctor doctor = Doctor.builder()
+                .user(user)
+                .especialidad("General")
+                .costoConsulta(0.0)
+                .appointmentDuration(30)
+                .activo(true)
+                .status("PENDING")
+                .profileConfigured(false)
+                .calificacion(0.0)
+                .descripcion("")
+                .location("")
+                .presentation("")
+                .photoUrl("")
+                .build();
             
             doctorRepository.save(doctor);
-            log.info("Perfil de médico creado para: {}", user.getUsername());
+            log.info("Perfil de médico creado exitosamente para: {}", user.getUsername());
         }
     }
 }

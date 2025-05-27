@@ -5,13 +5,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
 
 import com.example.proyectocitas.dto.AppointmentDTO;
 import com.example.proyectocitas.dto.AppointmentRequest;
@@ -22,20 +19,22 @@ import com.example.proyectocitas.exceptions.DoctorNotFoundException;
 import com.example.proyectocitas.exceptions.HorarioNotFoundException;
 import com.example.proyectocitas.exceptions.PatientNotFoundException;
 import com.example.proyectocitas.exceptions.ResourceNotFoundException;
-import com.example.proyectocitas.models.*;
-import com.example.proyectocitas.repositories.*;
+import com.example.proyectocitas.models.Appointment;
+import com.example.proyectocitas.models.Doctor;
+import com.example.proyectocitas.models.Horario;
+import com.example.proyectocitas.models.Patient;
+import com.example.proyectocitas.repositories.AppointmentRepository;
+import com.example.proyectocitas.repositories.DoctorRepository;
+import com.example.proyectocitas.repositories.HorarioRepository;
+import com.example.proyectocitas.repositories.PatientRepository;
+import com.example.proyectocitas.repositories.UserRepository;
 
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Servicio para gestionar las citas médicas
  */
 @Service
-@RequiredArgsConstructor
 public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
@@ -43,6 +42,16 @@ public class AppointmentService {
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
     private final HorarioRepository horarioRepository;
+
+    public AppointmentService(AppointmentRepository appointmentRepository, DoctorRepository doctorRepository,
+                             PatientRepository patientRepository, UserRepository userRepository, 
+                             HorarioRepository horarioRepository) {
+        this.appointmentRepository = appointmentRepository;
+        this.doctorRepository = doctorRepository;
+        this.patientRepository = patientRepository;
+        this.userRepository = userRepository;
+        this.horarioRepository = horarioRepository;
+    }
     
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");

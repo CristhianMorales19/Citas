@@ -62,26 +62,86 @@ public class Doctor {
     private Boolean profileConfigured;
     
     @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<Horario> horarios = new ArrayList<>();
     
     @OneToMany(mappedBy = "medico")
+    @Builder.Default
     private List<Appointment> citas = new ArrayList<>();
     
-    // Constructor vacío requerido por JPA
-    public Doctor() {
-        this.horarios = new ArrayList<>();
-        this.citas = new ArrayList<>();
+    // Additional getters and setters for the new fields
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public Integer getAppointmentDuration() {
+        return appointmentDuration;
+    }
+
+    public void setAppointmentDuration(Integer appointmentDuration) {
+        this.appointmentDuration = appointmentDuration;
+    }
+
+    public String getPresentation() {
+        return presentation;
+    }
+
+    public void setPresentation(String presentation) {
+        this.presentation = presentation;
     }
     
-    // Getters y setters
+    // Compatibility methods
     public Long getId() {
-        return id;
+        return this.id;
     }
     
-    public void setId(Long id) {
-        this.id = id;
+    public String getSpecialty() {
+        return this.especialidad;
     }
     
+    public void setSpecialty(String specialty) {
+        this.especialidad = specialty;
+    }
+    
+    public Double getConsultationCost() {
+        return this.costoConsulta;
+    }
+    
+    public void setConsultationCost(double consultationCost) {
+        this.costoConsulta = consultationCost;
+    }
+    
+    public List<Horario> getWeeklySchedule() {
+        return this.horarios;
+    }
+
+    public String getPhotoUrl() {
+        return photoUrl;
+    }
+
+    public void setPhotoUrl(String photoUrl) {
+        this.photoUrl = photoUrl;
+    }
+
+    public Boolean isProfileConfigured() {
+        return profileConfigured;
+    }    public void setProfileConfigured(Boolean profileConfigured) {
+        this.profileConfigured = profileConfigured;
+    }
+    
+    // Getters and setters for core fields
     public User getUser() {
         return user;
     }
@@ -138,54 +198,6 @@ public class Doctor {
         this.activo = activo;
     }
     
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public Integer getAppointmentDuration() {
-        return appointmentDuration;
-    }
-
-    public void setAppointmentDuration(Integer appointmentDuration) {
-        this.appointmentDuration = appointmentDuration;
-    }
-
-    public String getPresentation() {
-        return presentation;
-    }
-
-    public void setPresentation(String presentation) {
-        this.presentation = presentation;
-    }
-    
-    public String getPhotoUrl() {
-        return photoUrl;
-    }
-
-    public void setPhotoUrl(String photoUrl) {
-        this.photoUrl = photoUrl;
-    }
-
-    public Boolean getProfileConfigured() {
-        return profileConfigured;
-    }
-    
-    public void setProfileConfigured(Boolean profileConfigured) {
-        this.profileConfigured = profileConfigured;
-    }
-    
     public List<Horario> getHorarios() {
         return horarios;
     }
@@ -201,121 +213,115 @@ public class Doctor {
     public void setCitas(List<Appointment> citas) {
         this.citas = citas;
     }
+    }
     
-    // Métodos de compatibilidad
-    public String getSpecialty() {
+    // Additional getter methods
+    public User getUser() {
+        return this.user;
+    }
+    
+    public String getEspecialidad() {
         return this.especialidad;
     }
     
-    public void setSpecialty(String specialty) {
-        this.especialidad = specialty;
-    }
-    
-    public Double getConsultationCost() {
+    public Double getCostoConsulta() {
         return this.costoConsulta;
     }
     
-    public void setConsultationCost(double consultationCost) {
-        this.costoConsulta = consultationCost;
+    public String getPresentacion() {
+        return this.presentation;
     }
     
-    public List<Horario> getWeeklySchedule() {
+    public Boolean getProfileConfigured() {
+        return this.profileConfigured;
+    }
+    
+    public List<Horario> getHorarios() {
         return this.horarios;
     }
     
-    public Boolean isProfileConfigured() {
-        return profileConfigured;
+    public void setHorarios(ArrayList<Object> horarios) {
+        this.horarios.clear();
+        if (horarios != null) {
+            for (Object obj : horarios) {
+                if (obj instanceof Horario) {
+                    this.horarios.add((Horario) obj);
+                }
+            }
+        }
     }
     
-    // Builder pattern estático
+    // Additional setter methods
+    public void setEspecialidad(String especialidad) {
+        this.especialidad = especialidad;
+    }
+    
+    public void setCostoConsulta(double costoConsulta) {
+        this.costoConsulta = costoConsulta;
+    }
+    
+    public void setPresentacion(String presentacion) {
+        this.presentation = presentacion;
+    }
+    
+    // Removed duplicate setPhotoUrl, setLocation, setStatus, and setAppointmentDuration methods as they already exist in the class
+    
+    // Static builder method
     public static DoctorBuilder builder() {
         return new DoctorBuilder();
     }
     
+    // Builder class
     public static class DoctorBuilder {
-        private Doctor doctor;
-        
-        public DoctorBuilder() {
-            this.doctor = new Doctor();
-        }
-        
-        public DoctorBuilder id(Long id) {
-            doctor.setId(id);
-            return this;
-        }
+        private Doctor doctor = new Doctor();
         
         public DoctorBuilder user(User user) {
-            doctor.setUser(user);
+            doctor.user = user;
             return this;
         }
         
         public DoctorBuilder especialidad(String especialidad) {
-            doctor.setEspecialidad(especialidad);
-            return this;
-        }
-        
-        public DoctorBuilder cedulaProfesional(String cedulaProfesional) {
-            doctor.setCedulaProfesional(cedulaProfesional);
-            return this;
-        }
-        
-        public DoctorBuilder descripcion(String descripcion) {
-            doctor.setDescripcion(descripcion);
+            doctor.especialidad = especialidad;
             return this;
         }
         
         public DoctorBuilder costoConsulta(Double costoConsulta) {
-            doctor.setCostoConsulta(costoConsulta);
-            return this;
-        }
-        
-        public DoctorBuilder calificacion(Double calificacion) {
-            doctor.setCalificacion(calificacion);
-            return this;
-        }
-        
-        public DoctorBuilder activo(Boolean activo) {
-            doctor.setActivo(activo);
-            return this;
-        }
-        
-        public DoctorBuilder status(String status) {
-            doctor.setStatus(status);
-            return this;
-        }
-        
-        public DoctorBuilder location(String location) {
-            doctor.setLocation(location);
-            return this;
-        }
-        
-        public DoctorBuilder appointmentDuration(Integer appointmentDuration) {
-            doctor.setAppointmentDuration(appointmentDuration);
+            doctor.costoConsulta = costoConsulta;
             return this;
         }
         
         public DoctorBuilder presentation(String presentation) {
-            doctor.setPresentation(presentation);
+            doctor.presentation = presentation;
             return this;
         }
         
         public DoctorBuilder photoUrl(String photoUrl) {
-            doctor.setPhotoUrl(photoUrl);
+            doctor.photoUrl = photoUrl;
+            return this;
+        }
+        
+        public DoctorBuilder location(String location) {
+            doctor.location = location;
+            return this;
+        }
+        
+        public DoctorBuilder appointmentDuration(Integer appointmentDuration) {
+            doctor.appointmentDuration = appointmentDuration;
+            return this;
+        }
+        
+        public DoctorBuilder status(String status) {
+            doctor.status = status;
             return this;
         }
         
         public DoctorBuilder profileConfigured(Boolean profileConfigured) {
-            doctor.setProfileConfigured(profileConfigured);
+            doctor.profileConfigured = profileConfigured;
             return this;
         }
         
         public DoctorBuilder horarios(List<Horario> horarios) {
-            doctor.setHorarios(horarios);
-            return this;
-        }
-        
-        public DoctorBuilder citas(List<Appointment> citas) {
-            doctor.setCitas(citas);
+            doctor.horarios = horarios;
             return this;
         }
         

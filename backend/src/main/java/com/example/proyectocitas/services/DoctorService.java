@@ -4,10 +4,9 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -16,25 +15,28 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.proyectocitas.dto.DoctorDTO;
 import com.example.proyectocitas.dto.ScheduleDTO;
 import com.example.proyectocitas.dto.ScheduleRequest;
-import com.example.proyectocitas.models.Appointment;
 import com.example.proyectocitas.models.Doctor;
 import com.example.proyectocitas.models.Horario;
-import com.example.proyectocitas.models.Schedule;
 import com.example.proyectocitas.models.User;
 import com.example.proyectocitas.repositories.AppointmentRepository;
 import com.example.proyectocitas.repositories.DoctorRepository;
 import com.example.proyectocitas.repositories.UserRepository;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class DoctorService {
 
     private final DoctorRepository doctorRepository;
     private final UserRepository userRepository;
     private final AppointmentRepository appointmentRepository;
     private final AppointmentService appointmentService;
+
+    public DoctorService(DoctorRepository doctorRepository, UserRepository userRepository, 
+                        AppointmentRepository appointmentRepository, AppointmentService appointmentService) {
+        this.doctorRepository = doctorRepository;
+        this.userRepository = userRepository;
+        this.appointmentRepository = appointmentRepository;
+        this.appointmentService = appointmentService;
+    }
     
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");

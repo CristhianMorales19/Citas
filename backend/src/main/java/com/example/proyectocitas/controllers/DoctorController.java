@@ -1,7 +1,5 @@
 package com.example.proyectocitas.controllers;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,16 +25,19 @@ import com.example.proyectocitas.services.AppointmentService;
 import com.example.proyectocitas.services.DoctorService;
 import com.example.proyectocitas.services.FileStorageService;
 
-import lombok.RequiredArgsConstructor;
-
 @RestController
 @RequestMapping("/medicos")
-@RequiredArgsConstructor
 public class DoctorController {
 
     private final DoctorService doctorService;
     private final AppointmentService appointmentService;
     private final FileStorageService fileStorageService;
+    
+    public DoctorController(DoctorService doctorService, AppointmentService appointmentService, FileStorageService fileStorageService) {
+        this.doctorService = doctorService;
+        this.appointmentService = appointmentService;
+        this.fileStorageService = fileStorageService;
+    }
     
     @GetMapping("/listaMedicos")
     public ResponseEntity<List<DoctorDTO>> searchDoctors(
