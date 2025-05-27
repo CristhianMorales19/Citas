@@ -45,6 +45,7 @@ public class AppointmentService {
     private final HorarioRepository horarioRepository;
     
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final int WEEKS_TO_GENERATE = 4; // Generar citas para 4 semanas
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     /**
@@ -72,7 +73,7 @@ public class AppointmentService {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
                 
-        return appointmentRepository.findByDoctor(doctor).stream()
+        return appointmentRepository.findByMedico(doctor).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -84,7 +85,7 @@ public class AppointmentService {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
                 
-        return appointmentRepository.findByDoctorAndStatus(doctor, status).stream()
+        return appointmentRepository.findByMedicoAndEstado(doctor, status).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -96,7 +97,7 @@ public class AppointmentService {
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado con ID: " + patientId));
                 
-        return appointmentRepository.findByPatient(patient).stream()
+        return appointmentRepository.findByPaciente(patient).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -108,7 +109,7 @@ public class AppointmentService {
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado con ID: " + patientId));
                 
-        return appointmentRepository.findByPatientAndStatus(patient, status).stream()
+        return appointmentRepository.findByPacienteAndEstado(patient, status).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -137,61 +138,91 @@ public class AppointmentService {
      */
     @Transactional
     public void generateAppointmentSlots(Long doctorId, ScheduleRequest scheduleRequest, int weeksInAdvance) {
+        System.out.println("Iniciando generación de citas para el doctor ID: " + doctorId);
+        
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
         
-        LocalDate startDate = scheduleRequest.getStartDate() != null ? 
-                scheduleRequest.getStartDate() : LocalDate.now();
-        LocalDate endDate = scheduleRequest.getEndDate() != null ? 
-                scheduleRequest.getEndDate() : startDate.plusWeeks(weeksInAdvance);
+        LocalDate startDate = scheduleRequest.getFechaInicio() != null ? 
+                scheduleRequest.getFechaInicio() : LocalDate.now();
+        LocalDate endDate = scheduleRequest.getFechaFin() != null ? 
+                scheduleRequest.getFechaFin() : startDate.plusWeeks(weeksInAdvance);
+        
+        System.out.println("Rango de fechas: " + startDate + " a " + endDate);
         
         // Validar fechas
         if (endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("La fecha de fin debe ser posterior a la fecha de inicio");
         }
         
+        // Validar que el horario tenga los datos necesarios
+        if (scheduleRequest.getHoraInicio() == null || scheduleRequest.getHoraFin() == null) {
+            throw new IllegalArgumentException("El horario debe tener una hora de inicio y fin definidas");
+        }
+        
         // Generar citas para cada día en el rango
         LocalDate currentDate = startDate;
+        int citasGeneradas = 0;
+        
         while (!currentDate.isAfter(endDate)) {
-            // Verificar si el día de la semana está en los días disponibles
-            if (scheduleRequest.getDiasDisponibles() != null && 
-                !scheduleRequest.getDiasDisponibles().contains(currentDate.getDayOfWeek())) {
-                currentDate = currentDate.plusDays(1);
-                continue;
+            // Verificar si el día de la semana coincide con el día del horario
+            if (currentDate.getDayOfWeek() == scheduleRequest.getDiaSemana()) {
+                // Verificar si el día de la semana está en los días disponibles (si se especificaron)
+                if (scheduleRequest.getDiasDisponibles() == null || 
+                    scheduleRequest.getDiasDisponibles().contains(currentDate.getDayOfWeek())) {
+                    System.out.println("Generando citas para el día: " + currentDate);
+                    citasGeneradas += generateAppointmentsForDay(doctor, currentDate, scheduleRequest);
+                } else {
+                    System.out.println("Día no programado: " + currentDate);
+                }
+            } else {
+                System.out.println("Día no programado: " + currentDate);
             }
             
-            // Generar citas para este día
-            generateAppointmentsForDay(doctor, currentDate, scheduleRequest);
             currentDate = currentDate.plusDays(1);
         }
+        
+        System.out.println("Total de citas generadas: " + citasGeneradas);
     }
     
-    private void generateAppointmentsForDay(Doctor doctor, LocalDate date, ScheduleRequest scheduleRequest) {
+    private int generateAppointmentsForDay(Doctor doctor, LocalDate date, ScheduleRequest scheduleRequest) {
         LocalTime startTime = scheduleRequest.getHoraInicio();
         LocalTime endTime = scheduleRequest.getHoraFin();
         int duration = scheduleRequest.getDuracionCita() != null ? 
                 scheduleRequest.getDuracionCita() : 30; // 30 minutos por defecto
         
         LocalTime currentTime = startTime;
+        int citasCreadas = 0;
         
-        while (currentTime.plusMinutes(duration).isBefore(endTime) || 
-               currentTime.plusMinutes(duration).equals(endTime)) {
-            // Verificar si ya existe una cita en este horario
-            if (!appointmentRepository.existsByDoctorAndDateAndTime(doctor, date, currentTime)) {
+        System.out.println("Generando citas de " + startTime + " a " + endTime + " con duración " + duration + " minutos");
+        
+        while (!currentTime.isAfter(endTime) && 
+               currentTime.plusMinutes(duration).isBefore(endTime.plusMinutes(1))) {
+            // Verificar si ya existe una cita a esta hora
+            if (!appointmentRepository.existsByMedicoAndFechaAndHoraInicio(doctor, date, currentTime)) {
                 // Crear nueva cita disponible
                 Appointment appointment = new Appointment();
-                appointment.setDoctor(doctor);
-                appointment.setDate(date);
-                appointment.setTime(currentTime);
-                appointment.setStatus(Appointment.Status.DISPONIBLE);
-                appointment.setDuration(duration);
+                appointment.setMedico(doctor);
+                appointment.setFecha(date);
+                appointment.setHoraInicio(currentTime);
+                appointment.setHoraFin(currentTime.plusMinutes(duration));
+                appointment.setEstado(Appointment.Status.DISPONIBLE);
+                appointment.setFechaCreacion(LocalDateTime.now());
+                appointment.setFechaActualizacion(LocalDateTime.now());
                 
                 appointmentRepository.save(appointment);
+                citasCreadas++;
+                
+                System.out.println("Cita creada: " + date + " a las " + currentTime);
+            } else {
+                System.out.println("Cita ya existe: " + date + " a las " + currentTime);
             }
             
-            // Mover al siguiente bloque de tiempo
+            // Avanzar al siguiente bloque de tiempo
             currentTime = currentTime.plusMinutes(duration);
         }
+        
+        return citasCreadas;
     }
     
     /**
@@ -296,7 +327,7 @@ public class AppointmentService {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
                 
-        return appointmentRepository.findByDoctorAndStatusAndDateBetween(
+        return appointmentRepository.findByMedicoAndEstadoAndFechaBetween(
                 doctor, Appointment.Status.DISPONIBLE, startDate, endDate)
                 .stream()
                 .map(this::convertToDTO)
@@ -318,7 +349,7 @@ public class AppointmentService {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
                 
-        return appointmentRepository.findByDoctorAndStatus(doctor, Appointment.Status.DISPONIBLE)
+        return appointmentRepository.findByMedicoAndEstado(doctor, Appointment.Status.DISPONIBLE)
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -328,9 +359,14 @@ public class AppointmentService {
      * Obtiene todas las citas disponibles en el sistema
      */
     public List<AppointmentDTO> getAvailableAppointments() {
-        return appointmentRepository.findByEstado(Appointment.Status.DISPONIBLE)
-                .stream()
+        // Obtener todas las citas disponibles
+        List<Appointment> citasDisponibles = appointmentRepository.findByEstado(Appointment.Status.DISPONIBLE);
+        
+        // Convertir a DTO y ordenar por fecha y hora
+        return citasDisponibles.stream()
                 .map(this::convertToDTO)
+                .sorted(Comparator.comparing(AppointmentDTO::getFecha)
+                                .thenComparing(AppointmentDTO::getHoraInicio))
                 .collect(Collectors.toList());
     }
 
@@ -495,6 +531,92 @@ public class AppointmentService {
         return appointments.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * Genera citas automáticamente para todos los doctores basado en sus horarios
+     * @return Número de citas generadas
+     */
+    @Transactional
+    public int generateAppointments() {
+        int totalAppointments = 0;
+        LocalDate startDate = LocalDate.now();
+        LocalDate endDate = startDate.plusWeeks(WEEKS_TO_GENERATE);
+        
+        // Obtener todos los doctores activos
+        List<Doctor> doctors = doctorRepository.findAll().stream()
+                .filter(d -> d.isActivo() && "APPROVED".equals(d.getStatus()))
+                .collect(Collectors.toList());
+        
+        for (Doctor doctor : doctors) {
+            // Obtener horarios del doctor activos
+            List<Horario> horarios = horarioRepository.findByDoctorIdAndActivoTrue(doctor.getId());
+            
+            for (Horario horario : horarios) {
+                LocalDate currentDate = startDate;
+                
+                // Generar citas para cada día en el rango
+                while (!currentDate.isAfter(endDate)) {
+                    // Verificar si el día de la semana coincide con el horario
+                    if (currentDate.getDayOfWeek().name().equals(horario.getDiaSemana())) {
+                        totalAppointments += generateDailyAppointments(doctor, horario, currentDate);
+                    }
+                    currentDate = currentDate.plusDays(1);
+                }
+            }
+        }
+        
+        return totalAppointments;
+    }
+    
+    /**
+     * Genera las citas para un día específico según el horario del doctor
+     */
+    private int generateDailyAppointments(Doctor doctor, Horario horario, LocalDate date) {
+        int appointmentsCreated = 0;
+        LocalTime startTime = horario.getHoraInicio();
+        LocalTime endTime = horario.getHoraFin();
+        int duration = doctor.getAppointmentDuration() != null ? doctor.getAppointmentDuration() : 30; // minutos
+        
+        // Asegurarse de que la hora de inicio sea antes que la de fin
+        if (startTime.isAfter(endTime)) {
+            return 0;
+        }
+        
+        LocalTime currentTime = startTime;
+        
+        // Generar citas en intervalos de 'duration' minutos
+        while (currentTime.plusMinutes(duration).isBefore(endTime) || 
+               currentTime.plusMinutes(duration).equals(endTime)) {
+            
+            // Verificar si ya existe una cita en este horario
+            if (!appointmentRepository.existsByMedicoAndFechaAndHoraInicio(doctor, date, currentTime)) {
+                Appointment appointment = new Appointment();
+                appointment.setMedico(doctor);
+                appointment.setFecha(date);
+                appointment.setHoraInicio(currentTime);
+                appointment.setHoraFin(currentTime.plusMinutes(duration));
+                appointment.setStatus(Appointment.Status.DISPONIBLE);
+                appointment.setHorario(horario);
+                appointment.setFechaCreacion(LocalDateTime.now());
+                appointment.setFechaActualizacion(LocalDateTime.now());
+                
+                try {
+                    appointment = appointmentRepository.save(appointment);
+                    log.info("Cita generada exitosamente para el médico {} el {} a las {}", 
+                            doctor.getUser().getUsername(), date, currentTime);
+                } catch (Exception e) {
+                    log.error("Error al guardar la cita para el médico {} el {} a las {}: {}", 
+                            doctor.getUser().getUsername(), date, currentTime, e.getMessage(), e);
+                    throw e;
+                }
+                appointmentsCreated++;
+            }
+            
+            currentTime = currentTime.plusMinutes(duration);
+        }
+        
+        return appointmentsCreated;
     }
     
     /**

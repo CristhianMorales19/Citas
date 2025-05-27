@@ -123,12 +123,12 @@ public class PublicController {
                     
                     // Verificar si el slot está disponible (tiene una cita con estado 'AVAILABLE')
                     boolean isAvailable = availableAppointments.stream()
-                        .anyMatch(appt -> appt.getTime().equals(slotTime));
+                        .anyMatch(appt -> appt.getHoraInicio().equals(slotTime));
                     
                     // Verificar si el slot está ocupado por una cita programada
                     boolean isBooked = existingAppointments.stream()
                         .filter(appt -> appt.getStatus() != Appointment.Status.DISPONIBLE)
-                        .anyMatch(appt -> appt.getTime().equals(slotTime));
+                        .anyMatch(appt -> appt.getHoraInicio().equals(slotTime));
                     
                     // Solo mostrar el slot si está disponible y no está ocupado
                     boolean showSlot = isAvailable && !isBooked;

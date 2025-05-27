@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.proyectocitas.dto.AppointmentDTO;
@@ -88,6 +89,22 @@ public class DoctorController {
     public ResponseEntity<List<AppointmentDTO>> getDoctorAppointments(
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(appointmentService.getAppointmentsByDoctor(userDetails.getUsername()));
+    }
+    
+    /**
+     * Endpoint para generar citas automáticamente para todos los doctores
+     * @return Mensaje con el número de citas generadas
+     */
+    @PostMapping("/generar-citas")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> generateAppointments() {
+        int citasGeneradas = appointmentService.generateAppointments();
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Citas generadas exitosamente");
+        response.put("totalCitasGeneradas", citasGeneradas);
+        
+        return ResponseEntity.ok(response);
     }
     
     /**

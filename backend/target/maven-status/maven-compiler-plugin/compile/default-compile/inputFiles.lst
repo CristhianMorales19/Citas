@@ -34,6 +34,7 @@ C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\exam
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\config\ApplicationConfig.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\controllers\AuthController.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\repositories\UserRepository.java
+C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\controllers\HomeController.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\security\JwtAuthenticationFilter.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\dto\AuthResponse.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\services\DoctorService.java

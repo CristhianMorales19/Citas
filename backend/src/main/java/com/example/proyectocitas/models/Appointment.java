@@ -56,9 +56,6 @@ public class Appointment implements Serializable {
     @Column(name = "hora_fin", nullable = false)
     private LocalTime horaFin;
     
-    @Column(name = "time")
-    private LocalTime time;
-    
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false, columnDefinition = "varchar(20) default 'DISPONIBLE'")
     private Status estado;
@@ -139,13 +136,6 @@ public class Appointment implements Serializable {
         this.motivoCancelacion = motivoCancelacion;
     }
 
-    public LocalTime getTime() {
-        return time;
-    }
-
-    public void setTime(LocalTime time) {
-        this.time = time;
-    }
     
     public Status getEstado() {
         return this.estado;
@@ -240,10 +230,7 @@ public class Appointment implements Serializable {
             return this;
         }
         
-        public AppointmentBuilder time(LocalTime time) {
-            appointment.time = time;
-            return this;
-        }
+        // Removed time() method as there's no time field in Appointment
         
         public AppointmentBuilder estado(Status estado) {
             appointment.estado = estado;

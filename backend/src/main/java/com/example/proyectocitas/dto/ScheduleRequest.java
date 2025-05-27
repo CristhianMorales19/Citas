@@ -123,6 +123,16 @@ public class ScheduleRequest {
             return this;
         }
         
+        public ScheduleRequestBuilder fechaInicio(LocalDate fechaInicio) {
+            request.fechaInicio = fechaInicio;
+            return this;
+        }
+        
+        public ScheduleRequestBuilder fechaFin(LocalDate fechaFin) {
+            request.fechaFin = fechaFin;
+            return this;
+        }
+        
         public ScheduleRequest build() {
             return request;
         }

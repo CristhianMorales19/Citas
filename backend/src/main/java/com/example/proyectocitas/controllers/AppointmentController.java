@@ -1,6 +1,8 @@
 package com.example.proyectocitas.controllers;
 
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -98,18 +100,39 @@ public class AppointmentController {
     public ResponseEntity<?> getAvailableAppointments(
             @RequestParam(required = false) Long doctorId,
             @RequestParam(required = false) String date,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
         
         System.out.println("Solicitud de citas disponibles recibida - doctorId: " + doctorId + 
                          ", date: " + date + ", startDate: " + startDate + ", endDate: " + endDate);
         
         try {
             Object result;
-            if (doctorId != null && startDate != null && endDate != null) {
+            
+            // Convertir fechas de String a LocalDate si están presentes
+            LocalDate parsedStartDate = null;
+            LocalDate parsedEndDate = null;
+            
+            if (startDate != null) {
+                try {
+                    parsedStartDate = LocalDate.parse(startDate);
+                } catch (Exception e) {
+                    return ResponseEntity.badRequest().body("Formato de fecha de inicio inválido. Use el formato YYYY-MM-DD");
+                }
+            }
+            
+            if (endDate != null) {
+                try {
+                    parsedEndDate = LocalDate.parse(endDate);
+                } catch (Exception e) {
+                    return ResponseEntity.badRequest().body("Formato de fecha de fin inválido. Use el formato YYYY-MM-DD");
+                }
+            }
+            
+            if (doctorId != null && parsedStartDate != null && parsedEndDate != null) {
                 System.out.println("Buscando citas por rango de fechas");
-                result = appointmentService.getAvailableAppointmentsByDoctorAndDateRange(doctorId, startDate, endDate);
-                System.out.println("Citas encontradas: " + (result != null ? ((Map<?,?>)result).size() : 0));
+                result = appointmentService.getAvailableAppointmentsByDoctorAndDateRange(doctorId, parsedStartDate, parsedEndDate);
+                System.out.println("Citas encontradas: " + (result != null ? ((List<?>)result).size() : 0));
             } else if (doctorId != null && date != null) {
                 System.out.println("Buscando citas por fecha específica");
                 result = appointmentService.getAvailableAppointmentsByDoctorAndDate(doctorId, date);
@@ -123,11 +146,19 @@ public class AppointmentController {
                 result = appointmentService.getAvailableAppointments();
                 System.out.println("Citas encontradas: " + (result != null ? ((List<?>)result).size() : 0));
             }
+            
+            // Asegurarse de que el resultado sea un objeto JSON válido
+            if (result == null) {
+                result = new HashMap<>();
+            }
+            
             return ResponseEntity.ok(result);
+            
         } catch (Exception e) {
             System.err.println("Error al obtener citas disponibles: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al obtener citas disponibles");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                             .body(Collections.singletonMap("error", "Error al obtener citas disponibles: " + e.getMessage()));
         }
     }
 }

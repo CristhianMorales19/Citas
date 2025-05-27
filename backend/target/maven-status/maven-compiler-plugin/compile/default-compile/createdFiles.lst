@@ -60,6 +60,7 @@ com\example\proyectocitas\dto\LoginRequest$LoginRequestBuilder.class
 com\example\proyectocitas\dto\UserDTO.class
 com\example\proyectocitas\repositories\RoleRepository.class
 com\example\proyectocitas\exceptions\HorarioNotFoundException.class
+com\example\proyectocitas\controllers\HomeController.class
 com\example\proyectocitas\repositories\PatientRepository.class
 com\example\proyectocitas\dto\RegisterRequest.class
 com\example\proyectocitas\config\DataInitializer.class

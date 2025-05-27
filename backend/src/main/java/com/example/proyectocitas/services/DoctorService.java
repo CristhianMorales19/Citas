@@ -75,46 +75,94 @@ public class DoctorService {
     
     @Transactional
     public DoctorDTO createOrUpdateDoctorProfile(String username, DoctorDTO doctorDTO) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
-        
-        Doctor doctor = doctorRepository.findByUser(user)
-                .orElse(Doctor.builder()
-                        .user(user)
-                        .status("PENDING")
-                        .build());
-        
-        doctor.setEspecialidad(doctorDTO.getSpecialty());
-        doctor.setCostoConsulta(doctorDTO.getConsultationCost());
-        doctor.setLocation(doctorDTO.getLocation());
-        doctor.setAppointmentDuration(doctorDTO.getAppointmentDuration());
-        doctor.setPresentacion(doctorDTO.getPresentation());
-        
-        // Marcar que el perfil ha sido configurado
-        doctor.setProfileConfigured(true);
-        
-        // Update schedules
-        if (doctorDTO.getWeeklySchedule() != null) {
-            if (doctor.getHorarios() == null) {
-                doctor.setHorarios(new ArrayList<>());
-            } else {
-                doctor.getHorarios().clear();
+        System.out.println("Iniciando createOrUpdateDoctorProfile para el usuario: " + username);
+        try {
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+            
+            Doctor doctor = doctorRepository.findByUser(user)
+                    .orElse(Doctor.builder()
+                            .user(user)
+                            .status("PENDING")
+                            .build());
+            
+            doctor.setEspecialidad(doctorDTO.getSpecialty());
+            doctor.setCostoConsulta(doctorDTO.getConsultationCost());
+            doctor.setLocation(doctorDTO.getLocation());
+            doctor.setAppointmentDuration(doctorDTO.getAppointmentDuration());
+            doctor.setPresentacion(doctorDTO.getPresentation());
+            
+            // Marcar que el perfil ha sido configurado
+            doctor.setProfileConfigured(true);
+            
+            // Update schedules
+            if (doctorDTO.getWeeklySchedule() != null) {
+                if (doctor.getHorarios() == null) {
+                    doctor.setHorarios(new ArrayList<>());
+                } else {
+                    doctor.getHorarios().clear();
+                }
+                
+                for (ScheduleDTO scheduleDTO : doctorDTO.getWeeklySchedule()) {
+                    Horario horario = new Horario();
+                    horario.setDoctor(doctor);
+                    horario.setDiaSemana(DayOfWeek.valueOf(scheduleDTO.getDay()));
+                    horario.setHoraInicio(LocalTime.parse(scheduleDTO.getStartTime()));
+                    horario.setHoraFin(LocalTime.parse(scheduleDTO.getEndTime()));
+                    horario.setDuracionCita(doctor.getAppointmentDuration());
+                    
+                    doctor.getHorarios().add(horario);
+                }
             }
             
-            for (ScheduleDTO scheduleDTO : doctorDTO.getWeeklySchedule()) {
-                Horario horario = new Horario();
-                horario.setDoctor(doctor);
-                horario.setDiaSemana(DayOfWeek.valueOf(scheduleDTO.getDay()));
-                horario.setHoraInicio(LocalTime.parse(scheduleDTO.getStartTime()));
-                horario.setHoraFin(LocalTime.parse(scheduleDTO.getEndTime()));
-                horario.setDuracionCita(doctor.getAppointmentDuration());
+            // Guardar el médico con sus horarios
+            Doctor savedDoctor = doctorRepository.save(doctor);
+            System.out.println("Médico guardado con ID: " + savedDoctor.getId());
+            
+            // Generar citas para los horarios guardados
+            if (savedDoctor.getHorarios() != null && !savedDoctor.getHorarios().isEmpty()) {
+                System.out.println("Generando citas para " + savedDoctor.getHorarios().size() + " horarios");
                 
-                doctor.getHorarios().add(horario);
+                for (Horario horario : savedDoctor.getHorarios()) {
+                    try {
+                        System.out.println("Procesando horario: " + horario.getDiaSemana() + " de " + 
+                                         horario.getHoraInicio() + " a " + horario.getHoraFin());
+                        
+                        // Crear lista de días disponibles
+                        List<DayOfWeek> diasDisponibles = new ArrayList<>();
+                        diasDisponibles.add(horario.getDiaSemana());
+                        
+                        // Crear ScheduleRequest
+                        ScheduleRequest scheduleRequest = ScheduleRequest.builder()
+                                .diaSemana(horario.getDiaSemana())
+                                .horaInicio(horario.getHoraInicio())
+                                .horaFin(horario.getHoraFin())
+                                .duracionCita(horario.getDuracionCita())
+                                .diasDisponibles(diasDisponibles)
+                                .fechaInicio(LocalDate.now())
+                                .fechaFin(LocalDate.now().plusWeeks(4))
+                                .build();
+                        
+                        System.out.println("Generando citas para las próximas 4 semanas...");
+                        appointmentService.generateAppointmentSlots(savedDoctor.getId(), scheduleRequest, 4);
+                        System.out.println("Citas generadas exitosamente");
+                        
+                    } catch (Exception e) {
+                        System.err.println("Error generando citas para el horario: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+                System.out.println("No hay horarios para generar citas");
             }
+            
+            return convertToDTO(savedDoctor);
+            
+        } catch (Exception e) {
+            System.err.println("Error en createOrUpdateDoctorProfile: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-        
-        Doctor savedDoctor = doctorRepository.save(doctor);
-        return convertToDTO(savedDoctor);
     }
     
     @Transactional
@@ -204,11 +252,18 @@ public class DoctorService {
                 
                 // Generar citas disponibles para este horario
                 try {
+// Crear una lista con el día de la semana actual
+                    List<DayOfWeek> diasDisponibles = new ArrayList<>();
+                    diasDisponibles.add(DayOfWeek.valueOf(day));
+                    
                     ScheduleRequest scheduleRequest = ScheduleRequest.builder()
                             .diaSemana(DayOfWeek.valueOf(day))
                             .horaInicio(LocalTime.parse(startTime))
                             .horaFin(LocalTime.parse(endTime))
                             .duracionCita(doctor.getAppointmentDuration())
+                            .diasDisponibles(diasDisponibles)
+                            .fechaInicio(LocalDate.now())
+                            .fechaFin(LocalDate.now().plusWeeks(4))
                             .build();
                     
                     // Generar citas para las próximas 4 semanas

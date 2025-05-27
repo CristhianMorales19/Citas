@@ -51,22 +51,11 @@ public class Doctor {
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private Boolean activo;
     
-    @Column(name = "status")
     private String status;
-    
-    @Column(name = "location")
     private String location;
-    
-    @Column(name = "appointment_duration")
     private Integer appointmentDuration;
-    
-    @Column(name = "presentation")
     private String presentation;
-    
-    @Column(name = "photo_url")
     private String photoUrl;
-    
-    @Column(name = "profile_configured")
     private Boolean profileConfigured;
     
     @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -149,6 +138,10 @@ public class Doctor {
 
     public void setProfileConfigured(Boolean profileConfigured) {
         this.profileConfigured = profileConfigured;
+    }
+    
+    public Boolean isActivo() {
+        return activo;
     }
     
     // Additional getter methods

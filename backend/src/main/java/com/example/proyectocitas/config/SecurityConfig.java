@@ -95,23 +95,39 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        System.out.println("Configurando CORS...");
+        
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("*"));
+        
+        // Permitir solicitudes desde el frontend
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        
+        // Métodos HTTP permitidos
+        configuration.setAllowedMethods(List.of(
+            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
+        ));
+        
+        // Cabeceras permitidas
+        configuration.setAllowedHeaders(List.of(
+            "*"
+        ));
+        
+        // Cabeceras expuestas
+        configuration.setExposedHeaders(List.of(
+            "Authorization", "Content-Type", "Accept", "X-Requested-With"
+        ));
+        
+        // Permitir credenciales
         configuration.setAllowCredentials(true);
+        
+        // Tiempo de caché para la configuración CORS (en segundos)
         configuration.setMaxAge(3600L);
         
-        // Configuración específica para desarrollo
-        configuration.addAllowedOrigin("http://localhost:3000");
-        configuration.addAllowedMethod("*");
-        configuration.addAllowedHeader("*");
-        
+        // Registrar la configuración para todas las rutas
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         
-        System.out.println("Configuración CORS actualizada para: " + configuration.getAllowedOrigins());
+        System.out.println("Configuración CORS aplicada para todos los orígenes");
         return source;
     }
 
