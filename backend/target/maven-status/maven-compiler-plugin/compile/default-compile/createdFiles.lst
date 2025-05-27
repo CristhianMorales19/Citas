@@ -24,6 +24,7 @@ com\example\proyectocitas\config\SecurityConfig.class
 com\example\proyectocitas\dto\AuthResponse$AuthResponseBuilder.class
 com\example\proyectocitas\controllers\DoctorController.class
 com\example\proyectocitas\services\AuthService.class
+com\example\proyectocitas\controllers\DevController.class
 com\example\proyectocitas\security\JwtService.class
 com\example\proyectocitas\controllers\DiagnosticController.class
 com\example\proyectocitas\repositories\HorarioRepository.class
@@ -63,3 +64,4 @@ com\example\proyectocitas\repositories\PatientRepository.class
 com\example\proyectocitas\dto\RegisterRequest.class
 com\example\proyectocitas\config\DataInitializer.class
 com\example\proyectocitas\repositories\AppointmentRepository.class
+com\example\proyectocitas\services\UserRegistrationService.class

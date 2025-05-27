@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -36,13 +37,19 @@ public class SecurityConfig {
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
             .securityMatcher("/auth/**", "/api/**", "/diagnostic/**", "/public/**")
-            .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers(
+                    "/api/users/register-alternative/**",
+                    "/auth/**"
+                )
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
+                    "/api/users/register-alternative",
+                    "/api/users/register-alternative/**",
                     "/auth/**",
                     "/error",
-                    "/api/users/register-alternative",
                     "/diagnostic/**",
                     "/public/**"
                 ).permitAll()
@@ -67,7 +74,7 @@ public class SecurityConfig {
             .securityMatcher("/", "/login", "/admin-panel", "/admin/**", "/css/**", "/js/**", "/images/**")
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/login", "/css/**", "/js/**", "/images/**").permitAll()
-                .requestMatchers("/admin-panel", "/admin/**").hasAnyRole("admin", "medico")
+                .requestMatchers("/admin-panel", "/admin/**").hasAnyRole("ADMIN", "MEDICO")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -89,15 +96,22 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080"));
+        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
-        configuration.setExposedHeaders(List.of("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         
+        // Configuración específica para desarrollo
+        configuration.addAllowedOrigin("http://localhost:3000");
+        configuration.addAllowedMethod("*");
+        configuration.addAllowedHeader("*");
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+        
+        System.out.println("Configuración CORS actualizada para: " + configuration.getAllowedOrigins());
         return source;
     }
 

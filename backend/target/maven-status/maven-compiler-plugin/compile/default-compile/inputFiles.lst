@@ -43,9 +43,11 @@ C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\exam
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\dto\RegisterRequest.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\controllers\AppointmentController.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\security\JwtService.java
+C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\services\UserRegistrationService.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\dto\AppointmentDTO.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\dto\UserDTO.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\listeners\UserRegistrationListener.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\config\FileStorageConfig.java
+C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\controllers\DevController.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\models\Doctor.java
 C:\Users\Usuario\Desktop\CitasViejo\ProyectoCitas\backend\src\main\java\com\example\proyectocitas\controllers\PatientController.java
