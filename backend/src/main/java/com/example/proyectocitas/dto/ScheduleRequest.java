@@ -14,6 +14,7 @@ import java.util.List;
 @Data
 @Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class ScheduleRequest {
     private Long id;
     private Long doctorId;
@@ -58,9 +59,12 @@ public class ScheduleRequest {
     public LocalDate getEndDate() {
         return this.fechaFin;
     }
-    
-    public List<DayOfWeek> getDiasDisponibles() {
+      public List<DayOfWeek> getDiasDisponibles() {
         return this.diasDisponibles;
+    }
+    
+    public DayOfWeek getDiaSemana() {
+        return this.diaSemana;
     }
     
     // Additional methods for compatibility with existing code
@@ -117,10 +121,28 @@ public class ScheduleRequest {
             request.duracionCita = duracionCita;
             return this;
         }
-        
-        public ScheduleRequestBuilder diasDisponibles(List<DayOfWeek> diasDisponibles) {
+          public ScheduleRequestBuilder diasDisponibles(List<DayOfWeek> diasDisponibles) {
             request.diasDisponibles = diasDisponibles;
             return this;
+        }
+        
+        public ScheduleRequestBuilder fechaInicio(LocalDate fechaInicio) {
+            request.fechaInicio = fechaInicio;
+            return this;
+        }
+        
+        public ScheduleRequestBuilder fechaFin(LocalDate fechaFin) {
+            request.fechaFin = fechaFin;
+            return this;
+        }
+        
+        // Setter methods for compatibility
+        public void setFechaInicio(LocalDate fechaInicio) {
+            this.fechaInicio = fechaInicio;
+        }
+        
+        public void setFechaFin(LocalDate fechaFin) {
+            this.fechaFin = fechaFin;
         }
         
         public ScheduleRequest build() {

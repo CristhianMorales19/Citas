@@ -158,9 +158,17 @@
                     <div class="count" th:text="${totalAppointments}">0</div>
                 </div>
             </div>
-            
-            <!-- Sección de médicos pendientes -->
+              <!-- Sección de médicos pendientes -->
             <h2 class="section-title">Médicos Pendientes de Aprobación</h2>
+            
+            <!-- DEBUG: Información sobre pendingDoctors -->
+            <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">
+                <p><strong>DEBUG INFO:</strong></p>
+                <p>pendingDoctors es null: <span th:text="${pendingDoctors == null}">unknown</span></p>
+                <p>pendingDoctors está vacío: <span th:text="${pendingDoctors != null ? pendingDoctors.empty : 'N/A'}">unknown</span></p>
+                <p>Tamaño de pendingDoctors: <span th:text="${pendingDoctors != null ? pendingDoctors.size() : 'N/A'}">unknown</span></p>
+                <p>Tipo de pendingDoctors: <span th:text="${pendingDoctors != null ? pendingDoctors.class.simpleName : 'N/A'}">unknown</span></p>
+            </div>
             
             <div th:if="${pendingDoctors == null || pendingDoctors.empty}" class="empty-state">
                 <p>No hay médicos pendientes de aprobación en este momento.</p>
@@ -178,7 +186,7 @@
                     </thead>
                     <tbody>
                         <tr th:each="doctor : ${pendingDoctors}">
-                            <td th:text="${doctor.name ?: 'Sin nombre'}">Nombre del Doctor</td>
+                            <td th:text="${doctor.name != null ? doctor.name : 'Sin nombre'}">Nombre del Doctor</td>
                             <td th:text="${doctor.specialty ?: 'Sin especialidad'}">Especialidad</td>
                             <td th:text="${doctor.location ?: 'No especificada'}">Ubicación</td>
                             <td>

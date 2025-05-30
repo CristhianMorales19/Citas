@@ -1,12 +1,11 @@
 package com.example.proyectocitas.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -27,6 +26,11 @@ public class AppointmentDTO {
     private String fechaCreacion;
     private String fechaActualizacion;
     private Long horarioId;
+    
+    // Compatibility method for getStatus()
+    public String getStatus() {
+        return this.status;
+    }
     
     // Builder method
     public static AppointmentDTOBuilder builder() {

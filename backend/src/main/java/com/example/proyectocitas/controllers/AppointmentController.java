@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import com.example.proyectocitas.dto.AppointmentDTO;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/appointments")
+@CrossOrigin(origins = "http://localhost:3000", maxAge = 3600, allowCredentials = "true")
 @RequiredArgsConstructor
 public class AppointmentController {
 
@@ -43,13 +45,12 @@ public class AppointmentController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(appointmentService.createAppointment(request));
     }
-    
-    @PostMapping("/schedule/{doctorId}")
+      @PostMapping("/schedule/{doctorId}")
     public ResponseEntity<Void> generateSchedule(
             @PathVariable Long doctorId,
             @RequestBody ScheduleRequest scheduleRequest,
             @RequestParam(defaultValue = "4") int weeksInAdvance) {
-        appointmentService.generateAppointmentSlots(doctorId, scheduleRequest, weeksInAdvance);
+        appointmentService.generateInitialAppointmentsForDoctor(doctorId, weeksInAdvance);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
     

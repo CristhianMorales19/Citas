@@ -6,13 +6,18 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.proyectocitas.dto.AuthResponse;
 import com.example.proyectocitas.dto.LoginRequest;
 import com.example.proyectocitas.dto.RegisterRequest;
 import com.example.proyectocitas.dto.UserDTO;
+import com.example.proyectocitas.models.Doctor;
+import com.example.proyectocitas.models.Patient;
 import com.example.proyectocitas.models.Role;
 import com.example.proyectocitas.models.User;
+import com.example.proyectocitas.repositories.DoctorRepository;
+import com.example.proyectocitas.repositories.PatientRepository;
 import com.example.proyectocitas.repositories.RoleRepository;
 import com.example.proyectocitas.repositories.UserRepository;
 import com.example.proyectocitas.security.JwtService;
@@ -23,20 +28,26 @@ public class AuthService {
     
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final DoctorRepository doctorRepository;
+    private final PatientRepository patientRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-
+    
     public AuthService(UserRepository userRepository, RoleRepository roleRepository, 
+                      DoctorRepository doctorRepository, PatientRepository patientRepository,
                       PasswordEncoder passwordEncoder, JwtService jwtService, 
                       AuthenticationManager authenticationManager) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.doctorRepository = doctorRepository;
+        this.patientRepository = patientRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
     }
 
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         // Verificar si el usuario ya existe
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -46,41 +57,31 @@ public class AuthService {
                     .build();
         }
 
-        // Primero asegurarse de que los roles existan
+        // Inicializar roles
         try {
             initRoles();
         } catch (Exception e) {
-            // Ignorar si ya existen
             log.warn("Error al inicializar roles: {}", e.getMessage());
         }
-        
-        // Obtener el rol predeterminado (paciente)
-        String roleName = "paciente"; // Siempre usar paciente como valor predeterminado
+        String roleName = "paciente";
         if (request.getRole() != null && !request.getRole().trim().isEmpty()) {
             roleName = request.getRole().trim();
         }
-
         log.info("Buscando rol: {}", roleName);
-        
-        // Primero crear todos los roles básicos si no existen ya
         Role adminRole = ensureRoleExists("admin");
         Role medicoRole = ensureRoleExists("medico");
         Role pacienteRole = ensureRoleExists("paciente");
-        
-        // Seleccionar el rol apropiado basado en el nombre (defaulting a paciente)
         Role role;
         if ("admin".equals(roleName)) {
             role = adminRole;
         } else if ("medico".equals(roleName)) {
             role = medicoRole;
         } else {
-            // Por defecto, asignar el rol de paciente
             role = pacienteRole;
         }
-        
         log.info("Usuario será creado con el rol: {}", role.getName());
 
-        // Crear el usuario
+        // Guardar usuario primero y obtener el usuario persistido
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -88,20 +89,57 @@ public class AuthService {
                 .role(role)
                 .enabled(true)
                 .build();
-
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);        // Si es médico, crear perfil de doctor con el usuario persistido
+        if ("medico".equals(role.getName())) {
+            try {
+                if (doctorRepository.findByUser(savedUser).isEmpty()) {
+                    Doctor doctor = Doctor.builder()
+                            .user(savedUser)
+                            .especialidad("General")
+                            .costoConsulta(0.0)
+                            .appointmentDuration(30)
+                            .activo(true)
+                            .status("PENDING")
+                            .profileConfigured(false)
+                            .calificacion(0.0)
+                            .descripcion("")
+                            .location("")
+                            .presentation("")
+                            .photoUrl("")
+                            .build();
+                    doctorRepository.save(doctor);
+                    log.info("Perfil de médico creado exitosamente para: {}", savedUser.getUsername());
+                }
+            } catch (Exception e) {
+                log.error("Error al crear perfil de médico para {}: {}", savedUser.getUsername(), e.getMessage(), e);
+            }
+        }        // Si es paciente, crear perfil de paciente con el usuario persistido
+        if ("paciente".equals(role.getName())) {
+            try {
+                if (patientRepository.findByUser(savedUser).isEmpty()) {
+                    Patient patient = Patient.builder()
+                            .user(savedUser)
+                            .nombre(savedUser.getName())
+                            .medicalHistory("")
+                            .allergies("")
+                            .contactInformation("")
+                            .build();
+                    patientRepository.save(patient);
+                    log.info("Perfil de paciente creado exitosamente para: {}", savedUser.getUsername());
+                }
+            } catch (Exception e) {
+                log.error("Error al crear perfil de paciente para {}: {}", savedUser.getUsername(), e.getMessage(), e);
+            }
+        }
 
         // Generar token JWT
-        String jwtToken = jwtService.generateToken(user);
-
-        // Crear DTO para la respuesta
+        String jwtToken = jwtService.generateToken(savedUser);
         UserDTO userDTO = UserDTO.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .name(user.getName())
-                .role(user.getRole().getName())
+                .id(savedUser.getId())
+                .username(savedUser.getUsername())
+                .name(savedUser.getName())
+                .role(savedUser.getRole().getName())
                 .build();
-
         return AuthResponse.builder()
                 .success(true)
                 .message("Usuario registrado correctamente")

@@ -6,8 +6,26 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import lombok.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @NoArgsConstructor
@@ -52,12 +70,8 @@ public class Appointment implements Serializable {
     
     @Column(name = "hora_inicio", nullable = false)
     private LocalTime horaInicio;
-    
-    @Column(name = "hora_fin", nullable = false)
+      @Column(name = "hora_fin", nullable = false)
     private LocalTime horaFin;
-    
-    @Column(name = "time")
-    private LocalTime time;
     
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false, columnDefinition = "varchar(20) default 'DISPONIBLE'")
@@ -133,18 +147,8 @@ public class Appointment implements Serializable {
     // Additional getters and setters
     public String getMotivoCancelacion() {
         return motivoCancelacion;
-    }
-
-    public void setMotivoCancelacion(String motivoCancelacion) {
+    }    public void setMotivoCancelacion(String motivoCancelacion) {
         this.motivoCancelacion = motivoCancelacion;
-    }
-
-    public LocalTime getTime() {
-        return time;
-    }
-
-    public void setTime(LocalTime time) {
-        this.time = time;
     }
     
     public Status getEstado() {
@@ -234,14 +238,8 @@ public class Appointment implements Serializable {
             appointment.horaInicio = horaInicio;
             return this;
         }
-        
-        public AppointmentBuilder horaFin(LocalTime horaFin) {
+          public AppointmentBuilder horaFin(LocalTime horaFin) {
             appointment.horaFin = horaFin;
-            return this;
-        }
-        
-        public AppointmentBuilder time(LocalTime time) {
-            appointment.time = time;
             return this;
         }
         

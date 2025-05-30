@@ -9,21 +9,19 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class FileStorageService {
 
-    private final Path fileStorageLocation;
-
-    public FileStorageService(@Value("${app.upload.dir:./uploads}") String uploadDir) {
-        this.fileStorageLocation = Paths.get(uploadDir)
+    private final Path fileStorageLocation;    public FileStorageService(@Value("${app.upload.dir:./uploads}") String uploadDir) {
+        this.fileStorageLocation = Paths.get(uploadDir, "profile-photos")
                 .toAbsolutePath().normalize();
 
         try {
             Files.createDirectories(this.fileStorageLocation);
+            System.out.println("FileStorageService initialized. Upload directory: " + this.fileStorageLocation);
         } catch (Exception ex) {
             throw new RuntimeException("No se pudo crear el directorio para almacenar los archivos subidos.", ex);
         }

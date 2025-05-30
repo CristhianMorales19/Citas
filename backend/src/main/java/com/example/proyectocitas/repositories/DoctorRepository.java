@@ -18,14 +18,16 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     @Query("SELECT d FROM Doctor d WHERE d.user.username = :username")
     Optional<Doctor> findByUserUsername(String username);
     
-    List<Doctor> findByStatus(String status);
+    List<Doctor> findByStatus(String status); // Ya existe
+    
+    // Si quieres buscar por 'approved', agrega:
+    // List<Doctor> findByApprovedFalse();
     
     Long countByStatus(String status);
-    
-    @Query("SELECT d FROM Doctor d WHERE " +
-           "(:especialidad is null or d.especialidad = :especialidad) AND " +
+      @Query("SELECT d FROM Doctor d WHERE " +
+           "(:specialty is null or d.especialidad = :specialty) AND " +
            "(:location is null or d.location = :location)")
     List<Doctor> findBySpecialtyAndLocation(
-            @Param("especialidad") String especialidad, 
+            @Param("specialty") String specialty, 
             @Param("location") String location);
 }

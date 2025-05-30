@@ -34,6 +34,7 @@ com\example\proyectocitas\controllers\DiagnosticController.class
 com\example\proyectocitas\repositories\HorarioRepository.class
 com\example\proyectocitas\models\Schedule.class
 com\example\proyectocitas\controllers\AdminController.class
+com\example\proyectocitas\controllers\AdminDiagnosticController.class
 com\example\proyectocitas\models\Patient$PatientBuilder.class
 com\example\proyectocitas\models\Doctor$DoctorBuilder.class
 com\example\proyectocitas\models\Doctor.class

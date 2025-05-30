@@ -1,11 +1,26 @@
 package com.example.proyectocitas.models;
 
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.List;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @Builder
@@ -15,10 +30,9 @@ import java.util.List;
 @EqualsAndHashCode(exclude = "citas")
 @Entity
 @Table(name = "horario")
-public class Horario {
-    
-    @Id
+public class Horario {    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id") // Cambiado de "id_horario" a "id" para coincidir con la base de datos
     private Long id;
     
     @ManyToOne
@@ -92,6 +106,10 @@ public class Horario {
     
     public void setDuracionCita(Integer duracionCita) {
         this.duracionCita = duracionCita;
+    }
+    
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
     }
     
     public Long getId() {

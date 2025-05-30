@@ -54,9 +54,16 @@ public class DoctorDTO {
     public String getPresentation() {
         return this.presentation;
     }
-    
-    public List<ScheduleDTO> getWeeklySchedule() {
+      public List<ScheduleDTO> getWeeklySchedule() {
         return this.weeklySchedule;
+    }
+    
+    public String getStatus() {
+        return this.status;
+    }
+    
+    public boolean isProfileConfigured() {
+        return this.profileConfigured;
     }
     
     // Adding builder method

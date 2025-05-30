@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import com.example.proyectocitas.dto.AppointmentDTO;
 import com.example.proyectocitas.dto.AppointmentRequest;
 import com.example.proyectocitas.dto.HorarioDTO;
-import com.example.proyectocitas.dto.ScheduleRequest;
 import com.example.proyectocitas.exceptions.AppointmentNotAvailableException;
 import com.example.proyectocitas.exceptions.DoctorNotFoundException;
 import com.example.proyectocitas.exceptions.HorarioNotFoundException;
@@ -27,7 +26,6 @@ import com.example.proyectocitas.repositories.AppointmentRepository;
 import com.example.proyectocitas.repositories.DoctorRepository;
 import com.example.proyectocitas.repositories.HorarioRepository;
 import com.example.proyectocitas.repositories.PatientRepository;
-import com.example.proyectocitas.repositories.UserRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -35,26 +33,17 @@ import jakarta.transaction.Transactional;
  * Servicio para gestionar las citas médicas
  */
 @Service
-public class AppointmentService {
-
-    private final AppointmentRepository appointmentRepository;
+public class AppointmentService {    private final AppointmentRepository appointmentRepository;
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
-    private final UserRepository userRepository;
-    private final HorarioRepository horarioRepository;
-
-    public AppointmentService(AppointmentRepository appointmentRepository, DoctorRepository doctorRepository,
-                             PatientRepository patientRepository, UserRepository userRepository, 
-                             HorarioRepository horarioRepository) {
+    private final HorarioRepository horarioRepository;    public AppointmentService(AppointmentRepository appointmentRepository, DoctorRepository doctorRepository,
+                             PatientRepository patientRepository, HorarioRepository horarioRepository) {
         this.appointmentRepository = appointmentRepository;
         this.doctorRepository = doctorRepository;
         this.patientRepository = patientRepository;
-        this.userRepository = userRepository;
         this.horarioRepository = horarioRepository;
     }
-    
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+      private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     /**
      * Obtiene todas las citas del sistema
@@ -132,75 +121,11 @@ public class AppointmentService {
         return appointmentRepository.findByDoctorAndDate(doctor, date).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
-    }
-
-    /**
+    }    /**
      * Verifica si un horario está disponible para un médico en una fecha y hora específicas
      */
     public boolean isTimeSlotAvailable(Long doctorId, LocalDate date, LocalTime time) {
         return !appointmentRepository.existsByDoctorIdAndDateAndTime(doctorId, date, time);
-    }
-    
-    /**
-     * Genera bloques de citas disponibles para un médico según su horario
-     */
-    @Transactional
-    public void generateAppointmentSlots(Long doctorId, ScheduleRequest scheduleRequest, int weeksInAdvance) {
-        Doctor doctor = doctorRepository.findById(doctorId)
-                .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
-        
-        LocalDate startDate = scheduleRequest.getStartDate() != null ? 
-                scheduleRequest.getStartDate() : LocalDate.now();
-        LocalDate endDate = scheduleRequest.getEndDate() != null ? 
-                scheduleRequest.getEndDate() : startDate.plusWeeks(weeksInAdvance);
-        
-        // Validar fechas
-        if (endDate.isBefore(startDate)) {
-            throw new IllegalArgumentException("La fecha de fin debe ser posterior a la fecha de inicio");
-        }
-        
-        // Generar citas para cada día en el rango
-        LocalDate currentDate = startDate;
-        while (!currentDate.isAfter(endDate)) {
-            // Verificar si el día de la semana está en los días disponibles
-            if (scheduleRequest.getDiasDisponibles() != null && 
-                !scheduleRequest.getDiasDisponibles().contains(currentDate.getDayOfWeek())) {
-                currentDate = currentDate.plusDays(1);
-                continue;
-            }
-            
-            // Generar citas para este día
-            generateAppointmentsForDay(doctor, currentDate, scheduleRequest);
-            currentDate = currentDate.plusDays(1);
-        }
-    }
-    
-    private void generateAppointmentsForDay(Doctor doctor, LocalDate date, ScheduleRequest scheduleRequest) {
-        LocalTime startTime = scheduleRequest.getHoraInicio();
-        LocalTime endTime = scheduleRequest.getHoraFin();
-        int duration = scheduleRequest.getDuracionCita() != null ? 
-                scheduleRequest.getDuracionCita() : 30; // 30 minutos por defecto
-        
-        LocalTime currentTime = startTime;
-        
-        while (currentTime.plusMinutes(duration).isBefore(endTime) || 
-               currentTime.plusMinutes(duration).equals(endTime)) {
-            // Verificar si ya existe una cita en este horario
-            if (!appointmentRepository.existsByDoctorAndDateAndTime(doctor, date, currentTime)) {
-                // Crear nueva cita disponible
-                Appointment appointment = new Appointment();
-                appointment.setDoctor(doctor);
-                appointment.setDate(date);
-                appointment.setTime(currentTime);
-                appointment.setStatus(Appointment.Status.DISPONIBLE);
-                appointment.setDuration(duration);
-                
-                appointmentRepository.save(appointment);
-            }
-            
-            // Mover al siguiente bloque de tiempo
-            currentTime = currentTime.plusMinutes(duration);
-        }
     }
     
     /**
@@ -492,18 +417,36 @@ public class AppointmentService {
                 .activo(horario.isActivo())
                 .build();
     }
-    
-    /**
+      /**
      * Obtiene las citas de un médico por su nombre de usuario
      */
     public List<AppointmentDTO> getAppointmentsByDoctor(String username) {
+        System.out.println("=== DEBUG AppointmentService.getAppointmentsByDoctor ===");
+        System.out.println("Username recibido: " + username);
+        
         Doctor doctor = doctorRepository.findByUserUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor no encontrado"));
         
+        System.out.println("Doctor encontrado - ID: " + doctor.getId());
+        
         List<Appointment> appointments = appointmentRepository.findByMedico(doctor);
-        return appointments.stream()
+        System.out.println("Citas encontradas en BD: " + appointments.size());
+        
+        for (Appointment appointment : appointments) {
+            System.out.println("Cita encontrada - ID: " + appointment.getId() + 
+                             ", Fecha: " + appointment.getFecha() + 
+                             ", Hora: " + appointment.getHoraInicio() + 
+                             ", Estado: " + appointment.getEstado());
+        }
+        
+        List<AppointmentDTO> dtos = appointments.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+        
+        System.out.println("DTOs generados: " + dtos.size());
+        System.out.println("=== FIN DEBUG getAppointmentsByDoctor ===");
+        
+        return dtos;
     }
     
     /**
@@ -513,9 +456,80 @@ public class AppointmentService {
         Patient patient = patientRepository.findByUserUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado"));
         
-        List<Appointment> appointments = appointmentRepository.findByPaciente(patient);
-        return appointments.stream()
+        List<Appointment> appointments = appointmentRepository.findByPaciente(patient);        return appointments.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * Genera citas automáticamente para un médico cuando configura su horario por primera vez
+     * Este método debe ser llamado desde DoctorService cuando el doctor guarda su perfil por primera vez
+     */
+    @Transactional
+    public void generateInitialAppointmentsForDoctor(Long doctorId, int weeksInAdvance) {
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
+        
+        // Obtener los horarios activos del médico
+        List<Horario> horarios = horarioRepository.findByDoctorIdAndActivoTrue(doctorId);
+        
+        if (horarios.isEmpty()) {
+            throw new IllegalStateException("El médico no tiene horarios configurados");
+        }
+        
+        LocalDate startDate = LocalDate.now();
+        LocalDate endDate = startDate.plusWeeks(weeksInAdvance);
+        
+        // Generar citas para cada día en el rango especificado
+        LocalDate currentDate = startDate;
+        while (!currentDate.isAfter(endDate)) {
+            DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
+            
+            // Buscar horarios para este día de la semana
+            List<Horario> horariosDelDia = horarios.stream()
+                    .filter(h -> h.getDiaSemana() == dayOfWeek)
+                    .collect(Collectors.toList());
+            
+            // Generar citas para cada horario de este día
+            for (Horario horario : horariosDelDia) {
+                generateAppointmentsForSpecificDay(doctor, currentDate, horario);
+            }
+            
+            currentDate = currentDate.plusDays(1);
+        }
+    }
+    
+    /**
+     * Genera citas disponibles para un día específico basándose en un horario
+     */
+    private void generateAppointmentsForSpecificDay(Doctor doctor, LocalDate date, Horario horario) {
+        LocalTime startTime = horario.getHoraInicio();
+        LocalTime endTime = horario.getHoraFin();
+        int duration = horario.getDuracionCita();
+        
+        LocalTime currentTime = startTime;
+        
+        while (currentTime.plusMinutes(duration).isBefore(endTime) || 
+               currentTime.plusMinutes(duration).equals(endTime)) {
+            
+            // Verificar si ya existe una cita en este horario
+            if (!appointmentRepository.existsByMedicoAndFechaAndHoraInicio(doctor, date, currentTime)) {
+                // Crear nueva cita disponible
+                Appointment appointment = Appointment.builder()
+                        .medico(doctor)
+                        .fecha(date)
+                        .horaInicio(currentTime)
+                        .horaFin(currentTime.plusMinutes(duration))
+                        .estado(Appointment.Status.DISPONIBLE)
+                        .horario(horario)
+                        .fechaCreacion(LocalDateTime.now())
+                        .build();
+                
+                appointmentRepository.save(appointment);
+            }
+            
+            // Mover al siguiente bloque de tiempo
+            currentTime = currentTime.plusMinutes(duration);
+        }
     }
 }

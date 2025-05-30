@@ -1,5 +1,6 @@
 package com.example.proyectocitas.models;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,11 +18,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "patients")
-public class Patient {
-    @Id
+@Table(name = "paciente")
+public class Patient {    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_paciente")
     private Long id;
+    
+    @Column(name = "nombre", nullable = false)
+    private String nombre;
     
     @OneToOne
     @JoinColumn(name = "user_id")

@@ -31,20 +31,40 @@ public class WebController {
     @GetMapping("/login")
     public String loginPage() {
         return "login";
-    }      @GetMapping("/admin-panel")
+    }
+
+    @GetMapping("/admin-panel")
     @PreAuthorize("hasRole('ADMIN')")
     public String adminPanel(Model model) {
+        System.out.println("=== DEBUG: Cargando panel de administración ===");
+        
         List<DoctorDTO> pendingDoctors = doctorService.getPendingDoctors();
+        System.out.println("DEBUG: Médicos pendientes encontrados: " + pendingDoctors.size());
+        
+        for (DoctorDTO doctor : pendingDoctors) {
+            System.out.println("DEBUG: Doctor pendiente - ID: " + doctor.getId() + 
+                             ", Nombre: " + doctor.getName() + 
+                             ", Especialidad: " + doctor.getSpecialty());
+        }
+        
         model.addAttribute("pendingDoctors", pendingDoctors);
         
         // Obtener estadísticas para el panel de control
-        model.addAttribute("totalDoctors", doctorService.getTotalDoctorsCount());
-        model.addAttribute("totalPatients", userService.getTotalPatientsCount());
+        Long totalDoctors = doctorService.getTotalDoctorsCount();
+        Long totalPatients = userService.getTotalPatientsCount();
+        
+        System.out.println("DEBUG: Total médicos: " + totalDoctors);
+        System.out.println("DEBUG: Total pacientes: " + totalPatients);
+        
+        model.addAttribute("totalDoctors", totalDoctors);
+        model.addAttribute("totalPatients", totalPatients);
         model.addAttribute("totalAppointments", 0); // Puedes agregarlo si tienes un servicio para citas
         
+        System.out.println("=== DEBUG: Panel de administración cargado ===");
         return "admin-panel";
     }
-      @GetMapping("/admin/approve-doctor/{id}")
+
+    @GetMapping("/admin/approve-doctor/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public String approveDoctor(@PathVariable Long id) {
         doctorService.approveDoctor(id);
@@ -56,5 +76,11 @@ public class WebController {
     public String rejectDoctor(@PathVariable Long id) {
         doctorService.rejectDoctor(id);
         return "redirect:/admin-panel";
+    }
+
+    @GetMapping("/admin-panel/status-debug")
+    public String adminPanelStatusDebug(Model model) {
+        model.addAttribute("statusCounts", doctorService.getStatusCounts());
+        return "admin-panel-status-debug";
     }
 }

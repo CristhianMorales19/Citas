@@ -2,9 +2,11 @@ package com.example.proyectocitas.controllers;
 
 import com.example.proyectocitas.dto.RegisterRequest;
 import com.example.proyectocitas.models.Doctor;
+import com.example.proyectocitas.models.Patient;
 import com.example.proyectocitas.models.Role;
 import com.example.proyectocitas.models.User;
 import com.example.proyectocitas.repositories.DoctorRepository;
+import com.example.proyectocitas.repositories.PatientRepository;
 import com.example.proyectocitas.repositories.RoleRepository;
 import com.example.proyectocitas.repositories.UserRepository;
 import com.example.proyectocitas.security.JwtService;
@@ -18,13 +20,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/dev")
+@CrossOrigin(origins = "http://localhost:3000", maxAge = 3600, allowCredentials = "true")
 @RequiredArgsConstructor
 @Slf4j
-public class DevController {
-
-    private final UserRepository userRepository;
+public class DevController {    private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final DoctorRepository doctorRepository;
+    private final PatientRepository patientRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -66,9 +68,7 @@ public class DevController {
             user.setRole(role);
             
             User savedUser = userRepository.save(user);
-            log.info("Usuario creado exitosamente: {}", savedUser.getUsername());
-
-            // Si es médico, crear perfil
+            log.info("Usuario creado exitosamente: {}", savedUser.getUsername());            // Si es médico, crear perfil
             if ("medico".equalsIgnoreCase(roleName)) {
                 try {
                     if (doctorRepository.findByUser(savedUser).isEmpty()) {
@@ -92,6 +92,22 @@ public class DevController {
                     }
                 } catch (Exception e) {
                     log.error("Error al crear perfil de médico: {}", e.getMessage(), e);
+                    // Continuar aunque falle la creación del perfil
+                }
+            } else if ("paciente".equalsIgnoreCase(roleName) || roleName == null) {
+                try {
+                    if (patientRepository.findByUser(savedUser).isEmpty()) {
+                        Patient patient = new Patient();
+                        patient.setUser(savedUser);
+                        patient.setNombre(savedUser.getName());
+                        patient.setMedicalHistory("");
+                        patient.setAllergies("");
+                        patient.setContactInformation("");
+                        patientRepository.save(patient);
+                        log.info("Perfil de paciente creado para: {}", savedUser.getUsername());
+                    }
+                } catch (Exception e) {
+                    log.error("Error al crear perfil de paciente: {}", e.getMessage(), e);
                     // Continuar aunque falle la creación del perfil
                 }
             }

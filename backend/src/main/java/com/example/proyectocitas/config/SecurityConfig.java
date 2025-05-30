@@ -31,12 +31,10 @@ public class SecurityConfig {
     public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, AuthenticationProvider authenticationProvider) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.authenticationProvider = authenticationProvider;
-    }
-
-    @Bean
+    }    @Bean
     @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {        http
-            .securityMatcher("/auth/**", "/api/**", "/diagnostic/**", "/public/**")
+            .securityMatcher("/auth/**", "/api/**", "/diagnostic/**", "/public/**", "/pacientes/**")
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
@@ -60,8 +58,7 @@ public class SecurityConfig {
         System.out.println("Configuración de seguridad API actualizada: rutas públicas explicitamente permitidas");
 
         return http.build();
-    }
-      @Bean
+    }    @Bean
     @Order(2)
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -71,9 +68,11 @@ public class SecurityConfig {
                 .requestMatchers("/admin-panel", "/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
+            .authenticationProvider(authenticationProvider) // Agregar el AuthenticationProvider
             .formLogin(form -> form
                 .loginPage("/login")
-                .defaultSuccessUrl("/admin-panel")
+                .defaultSuccessUrl("/admin-panel", true)
+                .failureUrl("/login?error")
                 .permitAll()
             )
             .logout(logout -> logout
@@ -82,7 +81,7 @@ public class SecurityConfig {
                 .permitAll()
             );
 
-        System.out.println("Configuración de seguridad WEB actualizada: formulario de login configurado");
+        System.out.println("Configuración de seguridad WEB actualizada: formulario de login configurado con AuthenticationProvider");
             
         return http.build();
     }
