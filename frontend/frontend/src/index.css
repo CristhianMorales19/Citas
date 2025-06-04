@@ -1,0 +1,36 @@
+/* ResizeObserver error prevention styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent ResizeObserver loops by stabilizing body dimensions */
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Prevent ResizeObserver issues with common patterns */
+.container, .content, .main {
+  contain: layout style;
+}
+
+/* Stabilize flex containers */
+.flex, [style*="display: flex"], [style*="display:flex"] {
+  contain: layout;
+}
+
+/* Stabilize grid containers */
+.grid, [style*="display: grid"], [style*="display:grid"] {
+  contain: layout;
+}
