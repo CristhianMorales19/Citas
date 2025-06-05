@@ -164,7 +164,7 @@ const PatientAppointments: React.FC = () => {
     {
       id: 'medico',
       label: 'Doctor',
-      format: (value, row) => row.medico?.user?.name || 'No disponible',
+      format: (value, row) => row.doctorName || row.medico?.user?.name || 'No disponible',
     },
     {
       id: 'specialty',
@@ -301,8 +301,8 @@ const PatientAppointments: React.FC = () => {
         onConfirm={handleCancelAppointment}
         title="¿Cancelar cita?"
         message={
-          selectedAppointment
-            ? `¿Estás seguro de que deseas cancelar la cita con Dr. ${selectedAppointment.medico?.user?.name} del ${format(new Date(selectedAppointment.fecha), 'dd/MM/yyyy', { locale: es })} a las ${selectedAppointment.horaInicio}?`
+          selectedAppointment && selectedAppointment.fecha
+            ? `¿Estás seguro de que deseas cancelar la cita con Dr. ${selectedAppointment.doctorName || selectedAppointment.medico?.user?.name || 'Doctor'} del ${format(new Date(selectedAppointment.fecha), 'dd/MM/yyyy', { locale: es })} a las ${selectedAppointment.horaInicio}?`
             : ''
         }
         confirmText="Cancelar Cita"

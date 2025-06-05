@@ -10,7 +10,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
   Box,
   Button,
   TextField,
@@ -27,6 +26,7 @@ import {
   Alert,
   CircularProgress
 } from '@mui/material';
+import { StatusChip } from '../components/common';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { appointmentService } from '../services/api';
@@ -136,46 +136,6 @@ const PatientAppointments: React.FC = () => {
     setNotes('');
   };
 
-  const getStatusColor = (status: string = 'PENDING') => {
-    const normalizedStatus = status?.toUpperCase() || 'PENDING';
-    switch (normalizedStatus) {
-      case 'PENDING':
-      case 'PENDIENTE':
-        return '#ffa726';
-      case 'SCHEDULED':
-      case 'AGENDADA':
-        return '#4a90e2';
-      case 'COMPLETED':
-      case 'COMPLETADA':
-        return '#66bb6a';
-      case 'CANCELLED':
-      case 'CANCELADA':
-        return '#f44336';
-      default:
-        return '#757575';
-    }
-  };
-
-  const getStatusText = (status: string = 'PENDING') => {
-    const normalizedStatus = status?.toUpperCase() || 'PENDING';
-    switch (normalizedStatus) {
-      case 'PENDING':
-      case 'PENDIENTE':
-        return 'Pendiente';
-      case 'SCHEDULED':
-      case 'AGENDADA':
-        return 'Agendada';
-      case 'COMPLETED':
-      case 'COMPLETADA':
-        return 'Completada';
-      case 'CANCELLED':
-      case 'CANCELADA':
-        return 'Cancelada';
-      default:
-        return status || 'Desconocido';
-    }
-  };
-
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
@@ -214,10 +174,12 @@ const PatientAppointments: React.FC = () => {
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
                   <MenuItem value="">Todos</MenuItem>
-                  <MenuItem value="PENDING">Pendiente</MenuItem>
-                  <MenuItem value="SCHEDULED">Agendada</MenuItem>
-                  <MenuItem value="COMPLETED">Completada</MenuItem>
-                  <MenuItem value="CANCELLED">Cancelada</MenuItem>
+                  <MenuItem value="PENDIENTE">Pendiente</MenuItem>
+                  <MenuItem value="AGENDADA">Agendada</MenuItem>
+                  <MenuItem value="CONFIRMADA">Confirmada</MenuItem>
+                  <MenuItem value="COMPLETADA">Completada</MenuItem>
+                  <MenuItem value="CANCELADA">Cancelada</MenuItem>
+                  <MenuItem value="NO_ASISTIO">No asistió</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -246,7 +208,7 @@ const PatientAppointments: React.FC = () => {
               </TableHead>
               <TableBody>
                 {filteredAppointments.map((appointment) => {
-                  const doctorName = appointment.medico?.user?.name || 'Médico no disponible';
+                  const doctorName = appointment.doctorName || appointment.medico?.user?.name || 'Médico no disponible';
                   const appointmentDate = appointment.fecha ? new Date(appointment.fecha) : new Date();
                   const timeString = appointment.horaInicio || '--:--';
                   
@@ -255,12 +217,11 @@ const PatientAppointments: React.FC = () => {
                       <TableCell>
                         {format(appointmentDate, 'dd/MM/yyyy', { locale: es })}
                       </TableCell>
-                      <TableCell>{timeString}</TableCell>
+                      <TableCell>{appointment.horaInicio ? appointment.horaInicio.substring(0,5) : '--:--'}</TableCell>
                       <TableCell>{doctorName}</TableCell>
                       <TableCell>
-                        <Chip
-                          label={getStatusText(appointment.estado)}
-                          color={getStatusColor(appointment.estado) as any}
+                        <StatusChip
+                          status={appointment.estado || 'PENDIENTE'}
                           size="small"
                         />
                       </TableCell>
@@ -313,4 +274,4 @@ const PatientAppointments: React.FC = () => {
   );
 };
 
-export default PatientAppointments; 
+export default PatientAppointments;

@@ -35,6 +35,7 @@ com\example\proyectocitas\repositories\HorarioRepository.class
 com\example\proyectocitas\models\Schedule.class
 com\example\proyectocitas\controllers\AdminController.class
 com\example\proyectocitas\controllers\AdminDiagnosticController.class
+com\example\proyectocitas\dto\BookingRequest$BookingRequestBuilder.class
 com\example\proyectocitas\models\Patient$PatientBuilder.class
 com\example\proyectocitas\models\Doctor$DoctorBuilder.class
 com\example\proyectocitas\models\Doctor.class
@@ -43,6 +44,7 @@ com\example\proyectocitas\config\ApplicationConfig.class
 com\example\proyectocitas\exceptions\AppointmentNotAvailableException.class
 com\example\proyectocitas\models\User$UserBuilder.class
 com\example\proyectocitas\repositories\DoctorRepository.class
+com\example\proyectocitas\dto\BookingRequest.class
 com\example\proyectocitas\exceptions\DoctorNotFoundException.class
 com\example\proyectocitas\exceptions\GlobalExceptionHandler.class
 com\example\proyectocitas\models\Appointment.class

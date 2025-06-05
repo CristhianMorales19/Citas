@@ -33,17 +33,21 @@ import jakarta.transaction.Transactional;
  * Servicio para gestionar las citas médicas
  */
 @Service
-public class AppointmentService {    private final AppointmentRepository appointmentRepository;
+public class AppointmentService {
+
+    private final AppointmentRepository appointmentRepository;
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
-    private final HorarioRepository horarioRepository;    public AppointmentService(AppointmentRepository appointmentRepository, DoctorRepository doctorRepository,
-                             PatientRepository patientRepository, HorarioRepository horarioRepository) {
+    private final HorarioRepository horarioRepository;
+
+    public AppointmentService(AppointmentRepository appointmentRepository, DoctorRepository doctorRepository,
+            PatientRepository patientRepository, HorarioRepository horarioRepository) {
         this.appointmentRepository = appointmentRepository;
         this.doctorRepository = doctorRepository;
         this.patientRepository = patientRepository;
         this.horarioRepository = horarioRepository;
     }
-      private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     /**
      * Obtiene todas las citas del sistema
@@ -69,7 +73,7 @@ public class AppointmentService {    private final AppointmentRepository appoint
     public List<AppointmentDTO> getAppointmentsByDoctor(Long doctorId) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
-                
+
         return appointmentRepository.findByDoctor(doctor).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -81,7 +85,7 @@ public class AppointmentService {    private final AppointmentRepository appoint
     public List<AppointmentDTO> getAppointmentsByDoctorAndStatus(Long doctorId, Appointment.Status status) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
-                
+
         return appointmentRepository.findByDoctorAndStatus(doctor, status).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -93,7 +97,7 @@ public class AppointmentService {    private final AppointmentRepository appoint
     public List<AppointmentDTO> getAppointmentsByPatient(Long patientId) {
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado con ID: " + patientId));
-                
+
         return appointmentRepository.findByPatient(patient).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -105,7 +109,7 @@ public class AppointmentService {    private final AppointmentRepository appoint
     public List<AppointmentDTO> getAppointmentsByPatientAndStatus(Long patientId, Appointment.Status status) {
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado con ID: " + patientId));
-                
+
         return appointmentRepository.findByPatientAndStatus(patient, status).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -117,17 +121,20 @@ public class AppointmentService {    private final AppointmentRepository appoint
     public List<AppointmentDTO> getDoctorAppointmentsForDate(Long doctorId, LocalDate date) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
-                
+
         return appointmentRepository.findByDoctorAndDate(doctor, date).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
-    }    /**
-     * Verifica si un horario está disponible para un médico en una fecha y hora específicas
+    }
+
+    /**
+     * Verifica si un horario está disponible para un médico en una fecha y hora
+     * específicas
      */
     public boolean isTimeSlotAvailable(Long doctorId, LocalDate date, LocalTime time) {
         return !appointmentRepository.existsByDoctorIdAndDateAndTime(doctorId, date, time);
     }
-    
+
     /**
      * Programa una cita disponible para un paciente
      */
@@ -136,24 +143,24 @@ public class AppointmentService {    private final AppointmentRepository appoint
         // Obtener la cita
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con ID: " + appointmentId));
-        
+
         // Verificar que la cita esté disponible
         if (appointment.getStatus() != Appointment.Status.DISPONIBLE) {
             throw new AppointmentNotAvailableException("La cita no está disponible para ser agendada");
         }
-        
+
         // Obtener el paciente
         Patient patient = patientRepository.findByUserUsername(username)
                 .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado"));
-        
+
         // Actualizar la cita
         appointment.setPatient(patient);
         appointment.setStatus(Appointment.Status.AGENDADA);
         appointment.setUpdatedAt(LocalDateTime.now());
-        
+
         return convertToDTO(appointmentRepository.save(appointment));
     }
-    
+
     /**
      * Actualiza el estado de una cita
      */
@@ -161,34 +168,34 @@ public class AppointmentService {    private final AppointmentRepository appoint
     public AppointmentDTO updateAppointmentStatus(Long appointmentId, Appointment.Status newStatus) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con ID: " + appointmentId));
-        
+
         // Validar transición de estado
         if (!isValidStatusTransition(appointment.getStatus(), newStatus)) {
-            throw new IllegalStateException("Transición de estado no permitida: " + 
-                    appointment.getStatus() + " -> " + newStatus);
+            throw new IllegalStateException("Transición de estado no permitida: "
+                    + appointment.getStatus() + " -> " + newStatus);
         }
-        
+
         appointment.setStatus(newStatus);
         appointment.setUpdatedAt(LocalDateTime.now());
-        
+
         return convertToDTO(appointmentRepository.save(appointment));
     }
-    
+
     private boolean isValidStatusTransition(Appointment.Status currentStatus, Appointment.Status newStatus) {
         // Lógica para validar transiciones de estado permitidas
         switch (currentStatus) {
             case DISPONIBLE: // AVAILABLE
-                return newStatus == Appointment.Status.AGENDADA || 
-                       newStatus == Appointment.Status.CANCELADA;
+                return newStatus == Appointment.Status.AGENDADA
+                        || newStatus == Appointment.Status.CANCELADA;
             case AGENDADA: // BOOKED 
-                return newStatus == Appointment.Status.CONFIRMADA || 
-                       newStatus == Appointment.Status.CANCELADA;
+                return newStatus == Appointment.Status.CONFIRMADA
+                        || newStatus == Appointment.Status.CANCELADA;
             case CONFIRMADA: // CONFIRMED
-                return newStatus == Appointment.Status.EN_PROCESO || 
-                       newStatus == Appointment.Status.CANCELADA;
+                return newStatus == Appointment.Status.EN_PROCESO
+                        || newStatus == Appointment.Status.CANCELADA;
             case EN_PROCESO: // IN_PROGRESS
-                return newStatus == Appointment.Status.COMPLETADA || 
-                       newStatus == Appointment.Status.CANCELADA;
+                return newStatus == Appointment.Status.COMPLETADA
+                        || newStatus == Appointment.Status.CANCELADA;
             case COMPLETADA: // COMPLETED
             case CANCELADA: // CANCELLED
             case NO_ASISTIO: // NO_SHOW
@@ -197,7 +204,7 @@ public class AppointmentService {    private final AppointmentRepository appoint
                 return false;
         }
     }
-    
+
     /**
      * Cancela una cita
      */
@@ -205,23 +212,23 @@ public class AppointmentService {    private final AppointmentRepository appoint
     public void cancelAppointment(Long appointmentId, String username, String reason) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con ID: " + appointmentId));
-        
+
         // Verificar permisos (solo el paciente o el médico pueden cancelar)
         boolean isPatient = patientRepository.findByUserUsername(username).isPresent();
         boolean isDoctor = doctorRepository.findByUserUsername(username).isPresent();
-        
+
         if (!isPatient && !isDoctor) {
             throw new SecurityException("No tiene permiso para cancelar esta cita");
         }
-        
+
         // Actualizar estado de la cita
         appointment.setStatus(Appointment.Status.CANCELADA);
         appointment.setMotivoCancelacion(reason);
         appointment.setUpdatedAt(LocalDateTime.now());
-        
+
         appointmentRepository.save(appointment);
     }
-    
+
     /**
      * Obtiene las citas disponibles para un médico en un rango de fechas
      */
@@ -229,14 +236,14 @@ public class AppointmentService {    private final AppointmentRepository appoint
             Long doctorId, LocalDate startDate, LocalDate endDate) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
-                
+
         return appointmentRepository.findByDoctorAndStatusAndDateBetween(
                 doctor, Appointment.Status.DISPONIBLE, startDate, endDate)
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Obtiene las citas disponibles para un médico en una fecha específica
      */
@@ -244,20 +251,20 @@ public class AppointmentService {    private final AppointmentRepository appoint
         LocalDate appointmentDate = LocalDate.parse(date, DATE_FORMAT);
         return getAvailableAppointmentsByDoctorAndDateRange(doctorId, appointmentDate, appointmentDate);
     }
-    
+
     /**
      * Obtiene todas las citas disponibles para un médico
      */
     public List<AppointmentDTO> getAvailableAppointmentsByDoctor(Long doctorId) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
-                
+
         return appointmentRepository.findByDoctorAndStatus(doctor, Appointment.Status.DISPONIBLE)
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Obtiene todas las citas disponibles en el sistema
      */
@@ -276,29 +283,29 @@ public class AppointmentService {    private final AppointmentRepository appoint
         // 1. Verificar que el médico existe
         Doctor doctor = doctorRepository.findById(request.getDoctorId())
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado"));
-        
+
         // 2. Verificar que el paciente existe
         Patient patient = patientRepository.findById(request.getPatientId())
                 .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado"));
-        
+
         // 3. Verificar que el horario existe y está disponible
         Horario horario = horarioRepository.findById(request.getHorarioId())
                 .orElseThrow(() -> new HorarioNotFoundException("Horario no encontrado"));
-        
+
         // 4. Verificar que el horario pertenece al médico
         if (!horario.getDoctor().getId().equals(doctor.getId())) {
             throw new IllegalArgumentException("El horario no pertenece al médico especificado");
         }
-        
+
         // 5. Verificar que la cita está disponible
         LocalDate fechaCita = request.getFecha();
         LocalTime horaInicio = request.getHoraInicio();
         LocalTime horaFin = horaInicio.plusMinutes(horario.getDuracionCita());
-        
+
         if (!appointmentRepository.isHorarioDisponible(doctor.getId(), fechaCita, horaInicio, horaFin)) {
             throw new AppointmentNotAvailableException("El horario seleccionado ya no está disponible");
         }
-        
+
         // 6. Crear la cita
         Appointment cita = Appointment.builder()
                 .medico(doctor)
@@ -307,14 +314,14 @@ public class AppointmentService {    private final AppointmentRepository appoint
                 .fecha(fechaCita)
                 .horaInicio(horaInicio)
                 .horaFin(horaFin)
-                .estado(Appointment.Status.CONFIRMADA)
+                .estado(Appointment.Status.AGENDADA) // Cambiado de CONFIRMADA a AGENDADA
                 .motivoConsulta(request.getMotivoConsulta())
                 .notas(request.getNotas())
                 .build();
-        
+
         // 7. Guardar la cita
         Appointment savedCita = appointmentRepository.save(cita);
-        
+
         return convertToDTO(savedCita);
     }
 
@@ -325,13 +332,13 @@ public class AppointmentService {    private final AppointmentRepository appoint
     public AppointmentDTO updateEstado(Long appointmentId, Appointment.Status newStatus) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Cita no encontrada"));
-        
+
         appointment.setEstado(newStatus);
         Appointment updatedAppointment = appointmentRepository.save(appointment);
-        
+
         return convertToDTO(updatedAppointment);
     }
-    
+
     /**
      * Cancela una cita
      */
@@ -339,46 +346,46 @@ public class AppointmentService {    private final AppointmentRepository appoint
     public AppointmentDTO cancelAppointment(Long appointmentId, String motivoCancelacion) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Cita no encontrada"));
-        
+
         if (appointment.getEstado() != Appointment.Status.CONFIRMADA) {
             throw new IllegalStateException("Solo se pueden cancelar citas confirmadas");
         }
-        
+
         appointment.setEstado(Appointment.Status.CANCELADA);
         appointment.setMotivoCancelacion(motivoCancelacion);
         Appointment updatedAppointment = appointmentRepository.save(appointment);
-        
+
         return convertToDTO(updatedAppointment);
     }
-    
+
     /**
      * Obtiene los horarios disponibles de un médico para una fecha específica
      */
     public List<HorarioDTO> getAvailableSlots(Long doctorId, LocalDate fecha) {
         // Obtener el día de la semana (LUNES, MARTES, etc.)
         DayOfWeek diaSemana = fecha.getDayOfWeek();
-        
+
         // Obtener el horario del médico para ese día de la semana
         List<Horario> horarios = horarioRepository.findByDoctorIdAndDiaSemanaAndActivoTrue(doctorId, diaSemana);
-        
+
         // Obtener las citas existentes para ese médico en esa fecha
         List<Appointment> citasExistentes = appointmentRepository.findByMedicoIdAndFecha(doctorId, fecha);
-        
+
         // Convertir a DTOs y marcar los horarios ocupados
         return horarios.stream()
                 .map(horario -> {
                     HorarioDTO dto = convertToHorarioDTO(horario);
-                    
+
                     // Verificar si hay una cita en este horario
                     boolean ocupado = citasExistentes.stream()
                             .anyMatch(cita -> cita.getHoraInicio().equals(horario.getHoraInicio()));
-                    
+
                     dto.setDisponible(!ocupado);
                     return dto;
                 })
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Convierte una entidad Appointment a su correspondiente DTO
      */
@@ -386,22 +393,28 @@ public class AppointmentService {    private final AppointmentRepository appoint
         if (appointment == null) {
             return null;
         }
-        
+
         return AppointmentDTO.builder()
                 .id(appointment.getId())
                 .doctorId(appointment.getMedico() != null ? appointment.getMedico().getId() : null)
+                .doctorName(appointment.getMedico() != null && appointment.getMedico().getUser() != null
+                        ? appointment.getMedico().getUser().getName() : null)
                 .patientId(appointment.getPaciente() != null ? appointment.getPaciente().getId() : null)
+                .patientName(appointment.getPaciente() != null && appointment.getPaciente().getUser() != null
+                        ? appointment.getPaciente().getUser().getName() : null)
                 .horarioId(appointment.getHorario() != null ? appointment.getHorario().getId() : null)
                 .date(appointment.getFecha())
                 .time(appointment.getHoraInicio())
+                .horaInicio(appointment.getHoraInicio()) // Asegura que horaInicio se incluya en el DTO
+                .horaFin(appointment.getHoraFin()) // Asegura que horaFin se incluya en el DTO
                 .status(appointment.getEstado() != null ? appointment.getEstado().name() : null)
                 .motivoConsulta(appointment.getMotivoConsulta())
                 .notes(appointment.getNotas())
-                // Skip motivoCancelacion for now to avoid compilation errors
                 .fechaCreacion(appointment.getFechaCreacion() != null ? appointment.getFechaCreacion().toString() : null)
                 .fechaActualizacion(appointment.getFechaActualizacion() != null ? appointment.getFechaActualizacion().toString() : null)
                 .build();
     }
+
     /**
      * Convierte una entidad Horario a DTO
      */
@@ -417,88 +430,91 @@ public class AppointmentService {    private final AppointmentRepository appoint
                 .activo(horario.isActivo())
                 .build();
     }
-      /**
+
+    /**
      * Obtiene las citas de un médico por su nombre de usuario
      */
     public List<AppointmentDTO> getAppointmentsByDoctor(String username) {
         System.out.println("=== DEBUG AppointmentService.getAppointmentsByDoctor ===");
         System.out.println("Username recibido: " + username);
-        
+
         Doctor doctor = doctorRepository.findByUserUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor no encontrado"));
-        
+
         System.out.println("Doctor encontrado - ID: " + doctor.getId());
-        
+
         List<Appointment> appointments = appointmentRepository.findByMedico(doctor);
         System.out.println("Citas encontradas en BD: " + appointments.size());
-        
+
         for (Appointment appointment : appointments) {
-            System.out.println("Cita encontrada - ID: " + appointment.getId() + 
-                             ", Fecha: " + appointment.getFecha() + 
-                             ", Hora: " + appointment.getHoraInicio() + 
-                             ", Estado: " + appointment.getEstado());
+            System.out.println("Cita encontrada - ID: " + appointment.getId()
+                    + ", Fecha: " + appointment.getFecha()
+                    + ", Hora: " + appointment.getHoraInicio()
+                    + ", Estado: " + appointment.getEstado());
         }
-        
+
         List<AppointmentDTO> dtos = appointments.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
-        
+
         System.out.println("DTOs generados: " + dtos.size());
         System.out.println("=== FIN DEBUG getAppointmentsByDoctor ===");
-        
+
         return dtos;
     }
-    
+
     /**
      * Obtiene las citas de un paciente por su nombre de usuario
      */
     public List<AppointmentDTO> getAppointmentsByPatient(String username) {
         Patient patient = patientRepository.findByUserUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado"));
+
+        List<Appointment> appointments = appointmentRepository.findByPaciente(patient);
         
-        List<Appointment> appointments = appointmentRepository.findByPaciente(patient);        return appointments.stream()
+        return appointments.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
     /**
-     * Genera citas automáticamente para un médico cuando configura su horario por primera vez
-     * Este método debe ser llamado desde DoctorService cuando el doctor guarda su perfil por primera vez
+     * Genera citas automáticamente para un médico cuando configura su horario
+     * por primera vez Este método debe ser llamado desde DoctorService cuando
+     * el doctor guarda su perfil por primera vez
      */
     @Transactional
     public void generateInitialAppointmentsForDoctor(Long doctorId, int weeksInAdvance) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));
-        
+
         // Obtener los horarios activos del médico
         List<Horario> horarios = horarioRepository.findByDoctorIdAndActivoTrue(doctorId);
-        
+
         if (horarios.isEmpty()) {
             throw new IllegalStateException("El médico no tiene horarios configurados");
         }
-        
+
         LocalDate startDate = LocalDate.now();
         LocalDate endDate = startDate.plusWeeks(weeksInAdvance);
-        
+
         // Generar citas para cada día en el rango especificado
         LocalDate currentDate = startDate;
         while (!currentDate.isAfter(endDate)) {
             DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
-            
+
             // Buscar horarios para este día de la semana
             List<Horario> horariosDelDia = horarios.stream()
                     .filter(h -> h.getDiaSemana() == dayOfWeek)
                     .collect(Collectors.toList());
-            
+
             // Generar citas para cada horario de este día
             for (Horario horario : horariosDelDia) {
                 generateAppointmentsForSpecificDay(doctor, currentDate, horario);
             }
-            
+
             currentDate = currentDate.plusDays(1);
         }
     }
-    
+
     /**
      * Genera citas disponibles para un día específico basándose en un horario
      */
@@ -506,12 +522,12 @@ public class AppointmentService {    private final AppointmentRepository appoint
         LocalTime startTime = horario.getHoraInicio();
         LocalTime endTime = horario.getHoraFin();
         int duration = horario.getDuracionCita();
-        
+
         LocalTime currentTime = startTime;
-        
-        while (currentTime.plusMinutes(duration).isBefore(endTime) || 
-               currentTime.plusMinutes(duration).equals(endTime)) {
-            
+
+        while (currentTime.plusMinutes(duration).isBefore(endTime)
+                || currentTime.plusMinutes(duration).equals(endTime)) {
+
             // Verificar si ya existe una cita en este horario
             if (!appointmentRepository.existsByMedicoAndFechaAndHoraInicio(doctor, date, currentTime)) {
                 // Crear nueva cita disponible
@@ -524,12 +540,115 @@ public class AppointmentService {    private final AppointmentRepository appoint
                         .horario(horario)
                         .fechaCreacion(LocalDateTime.now())
                         .build();
-                
+
                 appointmentRepository.save(appointment);
             }
-            
+
             // Mover al siguiente bloque de tiempo
             currentTime = currentTime.plusMinutes(duration);
         }
+    }
+
+    /**
+     * Crea una cita de manera dinámica verificando disponibilidad en tiempo
+     * real Utilizado para booking desde la interfaz pública
+     */
+    @Transactional
+    public AppointmentDTO createAppointmentDynamically(String patientUsername, Long doctorId, LocalDate date, LocalTime time, String notes) {
+        // 1. Verificar que el médico existe
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new DoctorNotFoundException("Doctor no encontrado con ID: " + doctorId));        // 2. Obtener el paciente por username
+        Patient patient = patientRepository.findByUserUsername(patientUsername)
+                .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado con username: " + patientUsername));
+
+        System.out.println("=== DEBUG PACIENTE ===");
+        System.out.println("Username buscado: " + patientUsername);
+        System.out.println("Paciente encontrado - ID: " + patient.getId() + ", Username: " + patient.getUser().getUsername());
+
+        // 3. Verificar que el horario es válido para el médico en ese día de la semana
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
+        List<Horario> horariosDelDia = horarioRepository.findByDoctorIdAndDiaSemanaAndActivoTrue(doctorId, dayOfWeek);
+
+        Horario horarioValido = horariosDelDia.stream()
+                .filter(h -> !time.isBefore(h.getHoraInicio()) && !time.plusMinutes(h.getDuracionCita()).isAfter(h.getHoraFin()))
+                .findFirst()
+                .orElseThrow(() -> new AppointmentNotAvailableException("No hay horario disponible para el médico en el día y hora solicitados"));        // 4. Verificar que no existe una cita conflictiva
+        LocalTime endTime = time.plusMinutes(horarioValido.getDuracionCita());
+
+        // Debug: Ver qué citas existen para este médico en esta fecha
+        List<Appointment> citasExistentes = appointmentRepository.findByMedicoIdAndFecha(doctorId, date);
+        System.out.println("=== DEBUG VERIFICACIÓN DE DISPONIBILIDAD ===");
+        System.out.println("Doctor ID: " + doctorId + ", Fecha: " + date + ", Hora solicitada: " + time);
+        System.out.println("Citas existentes para este médico en esta fecha:");
+        for (Appointment cita : citasExistentes) {
+            System.out.println("  - ID: " + cita.getId() + ", Hora: " + cita.getHoraInicio()
+                    + ", Estado: " + cita.getEstado()
+                    + ", Paciente: " + (cita.getPaciente() != null ? cita.getPaciente().getId() : "null"));
+        }        // Verificar si existe una cita ocupada (con paciente asignado y no cancelada) en este horario exacto
+        boolean existeCitaOcupada = citasExistentes.stream()
+                .anyMatch(cita -> cita.getHoraInicio().equals(time)
+                && cita.getPaciente() != null
+                && cita.getEstado() != Appointment.Status.CANCELADA);
+
+        if (existeCitaOcupada) {
+            System.out.println("ERROR: Ya existe una cita ocupada en el horario " + time);
+            throw new AppointmentNotAvailableException("Ya existe una cita en el horario solicitado");
+        }        // 5. Verificar conflictos con citas existentes (solo citas ocupadas)
+        boolean hasConflict = citasExistentes.stream()
+                .filter(cita -> cita.getPaciente() != null && cita.getEstado() != Appointment.Status.CANCELADA) // Solo citas ocupadas y no canceladas
+                .anyMatch(cita -> {
+                    LocalTime citaStart = cita.getHoraInicio();
+                    LocalTime citaEnd = cita.getHoraFin();
+                    // Verificar solapamiento de horarios
+                    boolean overlap = !(endTime.isBefore(citaStart) || time.isAfter(citaEnd));
+                    if (overlap) {
+                        System.out.println("CONFLICTO encontrado con cita ocupada ID: " + cita.getId()
+                                + ", Horario: " + citaStart + "-" + citaEnd
+                                + ", Estado: " + cita.getEstado()
+                                + ", Paciente: " + cita.getPaciente().getId());
+                    }
+                    return overlap;
+                });
+
+        if (hasConflict) {
+            throw new AppointmentNotAvailableException("El horario solicitado entra en conflicto con otra cita existente");
+        }        // 6. Buscar si hay una cita DISPONIBLE en este horario que podamos reutilizar
+        Appointment citaDisponible = citasExistentes.stream()
+                .filter(cita -> cita.getHoraInicio().equals(time)
+                && cita.getEstado() == Appointment.Status.DISPONIBLE
+                && cita.getPaciente() == null)
+                .findFirst()
+                .orElse(null);
+        Appointment savedCita;
+        if (citaDisponible != null) {
+            // Reutilizar la cita disponible existente
+            System.out.println("Reutilizando cita disponible ID: " + citaDisponible.getId());
+            System.out.println("Asignando paciente ID: " + patient.getId() + " a la cita");
+            citaDisponible.setPatient(patient);
+            citaDisponible.setEstado(Appointment.Status.AGENDADA);
+            citaDisponible.setMotivoConsulta(notes != null ? notes : "");
+            citaDisponible.setNotas(notes);
+            citaDisponible.setUpdatedAt(LocalDateTime.now());
+            savedCita = appointmentRepository.save(citaDisponible);
+        } else {
+            // Crear una nueva cita
+            System.out.println("Creando nueva cita para horario: " + time);
+            Appointment nuevaCita = Appointment.builder()
+                    .medico(doctor)
+                    .paciente(patient)
+                    .horario(horarioValido)
+                    .fecha(date)
+                    .horaInicio(time)
+                    .horaFin(endTime)
+                    .estado(Appointment.Status.AGENDADA)
+                    .motivoConsulta(notes != null ? notes : "")
+                    .notas(notes)
+                    .fechaCreacion(LocalDateTime.now())
+                    .fechaActualizacion(LocalDateTime.now())
+                    .build();
+            savedCita = appointmentRepository.save(nuevaCita);
+        }
+
+        return convertToDTO(savedCita);
     }
 }

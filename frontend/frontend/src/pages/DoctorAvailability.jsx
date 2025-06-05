@@ -57,19 +57,16 @@ const DoctorAvailabilityPage = () => {
   const handleBookAppointment = (date, time) => {
     if (estaAutenticado) {
       // Si el usuario está autenticado, redirigir a la página de confirmación de cita
-      navigate('/appointments/book', { 
+      navigate(`/appointments/book/${doctorId}?date=${date}&time=${time}`, { 
         state: { 
-          doctorId,
-          doctorName: availability?.doctor.name,
-          date,
-          time
+          doctorName: availability?.doctor.name
         } 
       });
     } else {
       // Si no está autenticado, redirigir a la página de inicio de sesión
       navigate('/login', { 
         state: { 
-          from: `/public/doctors/${doctorId}/availability`,
+          from: `/appointments/book/${doctorId}?date=${date}&time=${time}`,
           booking: { doctorId, date, time }
         } 
       });

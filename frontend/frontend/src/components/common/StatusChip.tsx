@@ -19,6 +19,7 @@ interface StatusChipProps extends Omit<ChipProps, 'color' | 'variant'> {
 
 const statusConfig: Record<string, { color: ChipProps['color']; label?: string }> = {
   // Appointment statuses
+  agendada: { color: 'primary', label: 'Agendada' },
   confirmada: { color: 'success', label: 'Confirmada' },
   pendiente: { color: 'warning', label: 'Pendiente' },
   cancelada: { color: 'error', label: 'Cancelada' },

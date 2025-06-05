@@ -85,11 +85,13 @@ const PatientSearch: FC = () => {
   };
 
   const handleDoctorClick = (Doctor: DoctorSearchResult) => {
-    navigate(`/doctors/${Doctor.id}`);
+    navigate(`/public/doctors/${Doctor.id}/availability`);
   };
 
   const handleSlotClick = (slot: AvailableTimeSlot) => {
-    navigate(`/appointment/${slot.time}`);
+    // This should probably navigate to appointment booking with the slot info
+    // navigate(`/appointments/book/${doctorId}?date=${date}&time=${slot.time}`);
+    console.log('Selected slot:', slot);
   };
 
   const getAvailableDates = () => {

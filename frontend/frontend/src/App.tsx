@@ -24,6 +24,25 @@ const theme = createTheme({
     primary: {
       main: '#4a90e2',
     },
+    secondary: {
+      main: '#f50057',
+    },
+    success: {
+      main: '#4caf50',
+      contrastText: '#fff',
+    },
+    warning: {
+      main: '#ff9800',
+      contrastText: '#fff',
+    },
+    error: {
+      main: '#f44336',
+      contrastText: '#fff',
+    },
+    info: {
+      main: '#2196f3',
+      contrastText: '#fff',
+    },
   },
 });
 

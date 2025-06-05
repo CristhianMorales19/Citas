@@ -9,7 +9,7 @@ export const ROUTES = {
   // Rutas de paciente
   PATIENT: {
     APPOINTMENTS: '/paciente/appointments',
-    SEARCH: '/buscar-Doctor',
+    SEARCH: '/doctors',
   },
   
   // Rutas de doctor

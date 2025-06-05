@@ -34,8 +34,9 @@ const BookAppointment: React.FC = () => {
   const [DoctorInfo, setDoctorInfo] = useState<any>(null);
 
   const searchParams = new URLSearchParams(location.search);
-  const date = searchParams.get('date');
-  const time = searchParams.get('time');
+  const date = searchParams.get('date') || location.state?.date;
+  const time = searchParams.get('time') || location.state?.time;
+  const doctorName = location.state?.doctorName;
 
   const loadDoctorInfo = React.useCallback(async () => {
     try {
@@ -51,12 +52,27 @@ const BookAppointment: React.FC = () => {
   }, [DoctorId]);
 
   useEffect(() => {
+    console.log('BookAppointment - Debug info:', {
+      estaAutenticado,
+      DoctorId,
+      date,
+      time,
+      pathname: location.pathname,
+      search: location.search
+    });
+
     if (!estaAutenticado) {
+      console.log('BookAppointment - Redirecting to login: not authenticated');
       navigate('/login', { state: { from: location.pathname + location.search } });
       return;
     }
 
     if (!DoctorId || !date || !time) {
+      console.log('BookAppointment - Redirecting to home: missing parameters', {
+        DoctorId: !!DoctorId,
+        date: !!date,
+        time: !!time
+      });
       navigate('/');
       return;
     }
@@ -66,12 +82,26 @@ const BookAppointment: React.FC = () => {
 
   const handleConfirmAppointment = async () => {
     try {
+      console.log('BookAppointment - Starting appointment booking:', {
+        DoctorId,
+        date,
+        time
+      });
+      
       setLoading(true);
       setError(null);
       await appointmentService.bookAppointment(DoctorId!, date!, time!);
+      
+      console.log('BookAppointment - Appointment booked successfully');
       setSuccess('Cita agendada correctamente');
-      // No redirect. Show confirmation message and stay on page.
+      
+      // Redirigir a la página de citas del paciente después de 2 segundos
+      setTimeout(() => {
+        console.log('BookAppointment - Redirecting to patient appointments');
+        navigate('/paciente/appointments');
+      }, 2000);
     } catch (error) {
+      console.error('BookAppointment - Error booking appointment:', error);
       setError('Error al agendar la cita');
     } finally {
       setLoading(false);
@@ -140,16 +170,9 @@ const BookAppointment: React.FC = () => {
         { label: 'Confirmar Cita' },
       ]}
     >
-      {error && <ErrorMessage message={error} onClose={() => setError(null)} />}
+      {error && <ErrorMessage message={error} severity="error" onClose={() => setError(null)} />}
       {success && (
-        <>
-          <ErrorMessage message={success} />
-          <Box mt={2}>
-            <Button variant="contained" color="primary" onClick={() => navigate('/paciente/appointments')}>
-              Ir a Mis Citas
-            </Button>
-          </Box>
-        </>
+        <ErrorMessage message={success} severity="success" />
       )}
 
       <Grid container spacing={3}>

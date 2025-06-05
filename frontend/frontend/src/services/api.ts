@@ -175,13 +175,66 @@ export const appointmentService = {
   },
 
   bookAppointment: async (DoctorId: string, date: string, time: string, notes?: string) => {
-    const response = await api.post<Appointment>('/api/appointments', {
-      doctorId: parseInt(DoctorId),
-      date,
-      time,
-      notes
-    });
-    return response.data;
+    try {
+      console.log(`Iniciando proceso de reserva de cita para doctor ${DoctorId}, fecha ${date}, hora ${time}`);
+      
+      // Usar el mismo endpoint que usa DoctorAvailability para verificar disponibilidad
+      console.log('Verificando disponibilidad usando el endpoint público...');
+      const availabilityResponse = await api.get(`/public/doctors/${DoctorId}/availability`);
+      const availability = availabilityResponse.data;
+      
+      console.log('Disponibilidad obtenida:', availability);
+      
+      // Buscar el día específico en la disponibilidad
+      const targetDay = availability.availableDays?.find((day: any) => day.date === date);
+      
+      if (!targetDay) {
+        throw new Error(`No hay disponibilidad para la fecha ${date}`);
+      }
+      
+      console.log('Día encontrado:', targetDay);
+      
+      // Buscar el slot específico en ese día
+      const targetSlot = targetDay.slots?.find((slot: any) => slot.time === time && slot.available);
+      
+      if (!targetSlot) {
+        throw new Error(`El horario ${time} no está disponible para el ${date}`);
+      }
+      
+      console.log('Slot disponible confirmado:', targetSlot);
+      
+      // Ahora crear/reservar la cita directamente usando el endpoint de creación
+      const bookingData = {
+        doctorId: parseInt(DoctorId),
+        date: date,
+        time: time,
+        notes: notes || ''
+      };
+      
+      console.log('Creando cita con datos:', bookingData);
+      
+      // Crear la cita directamente
+      const response = await api.post<Appointment>('/api/appointments/create', bookingData);
+      
+      console.log('Cita creada exitosamente:', response.data);
+      return response.data;
+      
+    } catch (error) {
+      console.error('Error en el proceso de reserva de cita:', error);
+      
+      // Si es un error de Axios, extraer el mensaje del servidor
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      
+      // Si es un error personalizado, mantener el mensaje
+      if (error instanceof Error) {
+        throw error;
+      }
+      
+      // Error genérico
+      throw new Error('Error al reservar la cita. Por favor, intente de nuevo.');
+    }
   },
 
   getpacienteAppointments: async (): Promise<Appointment[]> => {
@@ -212,8 +265,10 @@ export const appointmentService = {
     }
   },
 
-  cancelAppointment: async (appointmentId: string) => {
-    await api.delete(`/api/appointments/${appointmentId}`);
+  cancelAppointment: async (appointmentId: string, reason?: string) => {
+    await api.put(`/api/appointments/${appointmentId}/cancel`, {}, {
+      params: { reason }
+    });
   },
 };
 

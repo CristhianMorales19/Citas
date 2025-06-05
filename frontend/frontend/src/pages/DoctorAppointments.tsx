@@ -221,7 +221,7 @@ const DoctorAppointments: React.FC = () => {
       // Filtrar por término de búsqueda (paciente o motivo de consulta)
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        const pacienteNombre = `${appointment.paciente.user.name || ''}`.toLowerCase();
+        const pacienteNombre = `${appointment.paciente?.user?.name || ''}`.toLowerCase();
         const motivoConsulta = (appointment.motivoConsulta || '').toLowerCase();
         
         if (!pacienteNombre.includes(searchLower) && !motivoConsulta.includes(searchLower)) {
@@ -230,7 +230,7 @@ const DoctorAppointments: React.FC = () => {
       }
       
       // Filtrar por rango de fechas
-      if (dateRange !== 'all') {
+      if (dateRange !== 'all' && appointment.fecha) {
         const appointmentDate = parseISO(appointment.fecha);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -511,8 +511,8 @@ const DoctorAppointments: React.FC = () => {
             <TableBody>
               {filteredAppointments.map((appointment) => (
                 <TableRow key={appointment.id}>
-                  <TableCell>{formatDate(appointment.fecha)}</TableCell>
-                  <TableCell>{formatTime(appointment.horaInicio)}</TableCell>
+                  <TableCell>{appointment.fecha ? formatDate(appointment.fecha) : 'N/A'}</TableCell>
+                  <TableCell>{appointment.horaInicio ? formatTime(appointment.horaInicio) : 'N/A'}</TableCell>
                   <TableCell>{appointment.paciente?.user?.name || 'N/A'}</TableCell>
                   <TableCell>
                     <Typography
@@ -598,10 +598,10 @@ const DoctorAppointments: React.FC = () => {
                   <strong>Paciente:</strong> {selectedAppointment.paciente?.user?.name || 'N/A'}
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  <strong>Fecha:</strong> {formatDate(selectedAppointment.fecha)}
+                  <strong>Fecha:</strong> {selectedAppointment.fecha ? formatDate(selectedAppointment.fecha) : 'N/A'}
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  <strong>Hora:</strong> {formatTime(selectedAppointment.horaInicio)} - {formatTime(selectedAppointment.horaFin)}
+                  <strong>Hora:</strong> {selectedAppointment.horaInicio ? formatTime(selectedAppointment.horaInicio) : 'N/A'} - {selectedAppointment.horaFin ? formatTime(selectedAppointment.horaFin) : 'N/A'}
                 </Typography>
                 <Typography variant="body1" gutterBottom>
                   <strong>Estado:</strong> {getStatusText(selectedAppointment.estado as AppointmentStatus)}

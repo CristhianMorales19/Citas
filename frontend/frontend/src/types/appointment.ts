@@ -115,20 +115,30 @@ export interface Patient {
 
 export interface Appointment {
   id: string;
-  paciente: Patient;
-  medico: Doctor;
+  doctorId?: number;
+  doctorName?: string;
+  patientId?: number;
+  patientName?: string;
+  paciente?: Patient;
+  medico?: Doctor;
   horario?: {
     id: string;
     dia: string;
     horaInicio: string;
     horaFin: string;
   };
-  fecha: string;
-  horaInicio: string;
-  horaFin: string;
-  estado: 'PENDIENTE' | 'AGENDADA' | 'CONFIRMADA' | 'COMPLETADA' | 'CANCELADA' | 'NO_ASISTIO';
+  // Campos del backend DTO
+  date?: string;
+  time?: string;
+  // Campos legacy (mantener compatibilidad)
+  fecha?: string;
+  horaInicio?: string;
+  horaFin?: string;
+  estado?: 'PENDIENTE' | 'AGENDADA' | 'CONFIRMADA' | 'COMPLETADA' | 'CANCELADA' | 'NO_ASISTIO';
+  status?: string;
   motivoConsulta?: string;
   notas?: string;
+  notes?: string;
   fechaCreacion?: string;
   fechaActualizacion?: string;
 }
